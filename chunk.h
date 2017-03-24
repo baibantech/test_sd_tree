@@ -9,7 +9,7 @@
 
 
 
-/*为计算效率，blk大小为2的整数次幂*/
+/*为????效?剩?blk??小为2??????????*/
 #define CLST_PG_NUM_MAX ((1<<14) ) /*cluster max = 64m*/
 //#define CHUNK_SIZE (1<<16)    /*瀛楄妭*/
 #define PG_BITS 12
@@ -24,7 +24,7 @@
 #define CLST_DIND_PGS_BITS        5
 #define CLST_TIND_PGS_BITS        4
 #endif
-//两级间接寻址即可寻址1G范围，远超64M的簇大小限制。
+//两??????寻址????寻址1G??围??远??64M?拇卮?小???啤?
 #define CLST_IND_PG (CLST_NDIR_PGS)    //index
 #define CLST_DIND_PG (CLST_IND_PG+1)    //index
 #define CLST_N_PGS (CLST_DIND_PG+1)//pclst->pglist[] max

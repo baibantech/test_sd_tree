@@ -3352,7 +3352,7 @@ cluster_head_t *spt_cluster_init(u64 startbit,
 {
     cluster_head_t *pclst, *plower_clst;
     spt_dh_ext *pdh_ext;
-    pclst = cluster_init(0, startbit, endbit, thread_num, pf, pf2, free_data, 
+    pclst = cluster_init(0, startbit, 4, thread_num, pf, pf2, free_data, 
                             spt_upper_construct_data);
     if(pclst == NULL)
         return NULL;
@@ -5676,7 +5676,7 @@ int main()
 
     pgclst = cluster_init();
     if(pgclst == NULL)
-    {
+    
         assert(0);
         printf("\r\n%d\t%s", __LINE__, __FUNCTION__);
         return 1;

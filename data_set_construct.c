@@ -416,7 +416,7 @@ void get_data_from_file(struct data_set_file *flist,long long start_off,long lon
 			
 	return ;
 }
-
+extern void test_insert_data(char *pdata);
 void test_insert_proc(void *args)
 {
 	struct data_set_cache *cur = NULL;
@@ -433,7 +433,7 @@ void test_insert_proc(void *args)
 		printf("cache addr is 0x%p\r\n",(void*)next->cache_mem);
 		while(data = get_next_data(next))
 		{
-			insert_data(data);
+			test_insert_data(data);
 		}
 		
 		if(cur)

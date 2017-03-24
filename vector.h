@@ -418,4 +418,8 @@ void db_free(cluster_head_t *pcluster, int id);
 extern spt_thrd_t *g_thrd_h;
 extern spt_dbg_info g_dbg_info;
 
+extern __thread u32 g_thrd_id;
+extern __thread int g_thrd_errno;
+extern cluster_head_t *pgclst;
+
 #endif

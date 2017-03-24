@@ -8,6 +8,9 @@
 #include<stdio.h>
 #include "data_set.h"
 #include "data_cache.h"
+#include "vector.h"
+#include "chunk.h"
+#include "splitter_adp.h"
 char test_case_name[64] = {'t','e','s','t','_','c','a','s','e'};
 
 typedef void (*test_proc_pfn)(void *args);
@@ -15,7 +18,7 @@ typedef void (*test_proc_pfn)(void *args);
 enum cmd_index
 {
 	SET_NAME,
-	DATA_SIZE ,
+	DATA_LEN ,
 	DATA_NUM,
 	RANDOM_SET,
 	FILE_SIZE,
@@ -36,7 +39,7 @@ struct cmdline_dsc cmdline[] =
 {
 	{.cmd_id = SET_NAME,.cmd = "set_name",.dsc = "data set name ,type string"},
 	
-	{.cmd_id = DATA_SIZE,.cmd = "instance_size",.dsc = "data instance len,type value"},
+	{.cmd_id = DATA_LEN,.cmd = "instance_size",.dsc = "data instance len,type value"},
 	{.cmd_id = DATA_NUM,.cmd = "instance_num",.dsc = "data instance num,type value"},
 	
 	{.cmd_id = RANDOM_SET,.cmd = "random_set",.dsc = "1 for random data construct ,otherwise specfic data set files"},
@@ -155,7 +158,7 @@ int  parse_cmdline(int argc,char *argv[])
 								break;
 							}
 							
-							case DATA_SIZE:
+							case DATA_LEN:
 							{
 								value = strtol(&argv[i][j],NULL,10);
 								printf("value is %lld\r\n",value);
@@ -292,10 +295,38 @@ int main(int argc,char *argv[])
 	}
 	get_data_from_file(set_file_list,data_set_config_map_read_start*data_set_config_instance_len,get_data_len);
 	
+	//set data size
+	
+	set_data_size(data_set_config_instance_len);
+	
+	//init cluster head
+	
+    pgclst = spt_cluster_init(0,DATA_BIT_MAX, 1, 
+                              tree_get_key_from_data,
+                              tree_free_key,
+                              tree_free_data,
+                              tree_construct_data_from_key);
+    if(pgclst == NULL)
+    {
+        spt_debug("cluster_init err\r\n");
+        return 1;
+    }
+
+    g_thrd_h = spt_thread_init(1);
+    if(g_thrd_h == NULL)
+    {
+        spt_debug("spt_thread_init err\r\n");
+        return 1;
+	}
+	
+	g_thrd_id =0;
 	test_insert_proc(NULL);
 
 	return 0;
 
 }
 
-
+void test_insert_data(char *pdata)
+{
+	insert_data(pgclst,pdata);
+}

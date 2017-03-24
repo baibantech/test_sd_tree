@@ -329,7 +329,7 @@ void*  map_data_set_file_anonymous(struct data_set_file *flist,long start_addr)
 	}
 
 	printf("data set len is %d\r\n",data_set_len);
-	map_addr = mmap(start_addr ,data_set_len ,PROT_READ,MAP_ANONYMOUS|MAP_PRIVATE,-1,0);
+	map_addr = mmap(start_addr ,data_set_len ,PROT_READ|PROT_WRITE,MAP_ANONYMOUS|MAP_PRIVATE,-1,0);
 	
 	printf("map_addr is %p\r\n",map_addr);
 	
@@ -347,13 +347,13 @@ void*  map_data_set_file_anonymous(struct data_set_file *flist,long start_addr)
 	return NULL;
 }
 
-void get_data_file(int fd, long long off,void *start,long long read_len)
+void get_data_file(struct data_set_file *f, long long off,void *start,long long read_len)
 {
 	long long len = read_len;
 	long long i = 0;
 
-	printf("fd is %d,off is %lld,start is 0x%p,read len is %lld\r\n",fd,off,start,read_len);
-	if(-1 == fd)/*map anon*/
+	printf("fd is %d ,off is %lld,start is 0x%p,read len is %lld\r\n",f->file_fd,off,start,read_len);
+	if(-1 != f->file_fd)/*map shared*/
 	{
 		for(i = 0 ; i < read_len ; i++)
 		{
@@ -361,10 +361,23 @@ void get_data_file(int fd, long long off,void *start,long long read_len)
 		}
 
 	}
-	else /*map shared*/
-	{
+	else /*map anon*/
+	{	
+		int fd = open(f->set_name,O_RDWR|O_DIRECT);
+		int r_cnt = 0;
+		if(-1 == fd)
+		{
+			printf("err in get data file \r\n");	
+		}
+			
 		lseek(fd,off,SEEK_SET);
-		read(start,read_len,1,fd);	
+		r_cnt =read(fd,start,read_len);
+		printf("r_cnt is %d\r\n",r_cnt);
+		if(r_cnt == -1)
+		{
+			perror("read:");
+		}
+		close(fd);
 	}
 	
 	return;
@@ -389,7 +402,7 @@ void get_data_from_file(struct data_set_file *flist,long long start_off,long lon
 			read_len = cur->set_len - start;
 			if(-1 == len)
 			{
-				get_data_file(cur->file_fd,start,map_start+start_off,read_len);
+				get_data_file(cur,start,map_start+start_off,read_len);
 				start_off +=  read_len;
 			}
 			else
@@ -397,13 +410,13 @@ void get_data_from_file(struct data_set_file *flist,long long start_off,long lon
 				if(read_len <= len)
 				{
 					len = len - read_len;
-					get_data_file(cur->file_fd,start,map_start+start_off,read_len);
+					get_data_file(cur,start,map_start+start_off,read_len);
 					start_off +=  read_len;
 				}
 				else
 				{
 					if(len != 0){
-						get_data_file(cur->file_fd,start,map_start+start_off,len);
+						get_data_file(cur,start,map_start+start_off,len);
 					}
 					break;
 				}

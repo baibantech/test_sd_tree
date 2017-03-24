@@ -12,7 +12,6 @@
 #include <atomic_user.h>
 #include <vector.h>
 #include <chunk.h>
-#include <lf_order.h>
 
 void vec_buf_free(cluster_head_t *pclst, int thread_id);
 void db_buf_free(cluster_head_t *pclst, int thread_id);
@@ -329,7 +328,7 @@ cluster_head_t * cluster_init(int is_bottom,
 //    phead->vec_per_pg_bits = PG_BITS - VBLK_BITS;
     phead->pg_ptr_bits= PG_BITS - ptr_bits;
     phead->blk_per_pg = PG_SIZE/BLK_SIZE;
-    phead->db_per_blk= BLK_SIZE/DBLK_SIZE; /*Èç¹û²»¶ÔÆë£¬Ê£Óà¿Õ¼äÀË·Ñ*/
+    phead->db_per_blk= BLK_SIZE/DBLK_SIZE; /*?????????ë£¬Ê£???Õ¼??Ë·?*/
     phead->vec_per_blk = BLK_SIZE/VBLK_SIZE;
     phead->vec_free_head = -1;
     phead->blk_free_head = -1;

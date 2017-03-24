@@ -2,7 +2,6 @@
 #define _SPLITTER_VECTOR_H
 
 #include <atomic_user.h>
-#include <lf_order.h>
 
 
 #define SPT_VEC_RIGHT 0

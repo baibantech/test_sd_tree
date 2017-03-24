@@ -417,16 +417,6 @@ void get_data_from_file(struct data_set_file *flist,long long start_off,long lon
 	return ;
 }
 
-int insert_data(void *data)
-{
-	return 0;
-}
-int delete_data(void *data)
-{
-	return 0;
-}
-
-
 void test_insert_proc(void *args)
 {
 	struct data_set_cache *cur = NULL;

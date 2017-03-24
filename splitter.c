@@ -5952,6 +5952,7 @@ thread_exit:
 
 #endif
 
+#if 0
 int main()
 {
     long num, thread_num;
@@ -6010,7 +6011,7 @@ int main()
     
     return 0;
 }
-
+#endif
 #endif
 
 

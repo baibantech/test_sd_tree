@@ -14,8 +14,9 @@ void* get_next_data(struct data_set_cache *cur)
 {
 	if(cur->cur_ins_id < cur->ins_num)
 	{
-		cur->cache_mem + cur->cur_ins_id*cur->ins_size;	
+		void *data = cur->cache_mem + cur->cur_ins_id*cur->ins_size;	
 		cur->cur_ins_id++;
+		return data;
 	}
 	else
 	{

@@ -433,6 +433,8 @@ void test_insert_proc(void *args)
 		printf("cache addr is 0x%p\r\n",(void*)next->cache_mem);
 		while(data = get_next_data(next))
 		{
+			printf("data addr is 0x%p\r\n",data);
+			
 			test_insert_data(data);
 		}
 		

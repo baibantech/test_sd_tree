@@ -16,6 +16,7 @@
 void vec_buf_free(cluster_head_t *pclst, int thread_id);
 void db_buf_free(cluster_head_t *pclst, int thread_id);
 int fill_in_rsv_list_simple(cluster_head_t *pclst, int nr, int thread_id);
+int g_data_size = 8;
 
 #if 1 //for test
 char* blk_id_2_ptr(cluster_head_t *pclst, unsigned int id)
@@ -119,6 +120,10 @@ char* vec_id_2_ptr(cluster_head_t *pclst, unsigned int id)
     
 }
 #endif
+void set_data_size(int size)
+{
+    g_data_size = size;
+}
 char *alloc_data()
 {
     return malloc(DATA_SIZE);

@@ -401,7 +401,7 @@ typedef struct spt_dbg_info_st
 }spt_dbg_info;
 
 //#define DBLK_BITS 3
-#define DATA_SIZE 8
+#define DATA_SIZE g_data_size
 #define RSV_SIZE 2
 #define DBLK_SIZE (sizeof(spt_dh))
 #define VBLK_BITS 3

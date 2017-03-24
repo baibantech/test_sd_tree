@@ -173,6 +173,6 @@ void default_end_get_key(char *p);
 
 void test_vec_alloc_n_times(cluster_head_t *pclst);
 void debug_data_print(char *pdata);
-
+extern int g_data_size;
 #endif
 

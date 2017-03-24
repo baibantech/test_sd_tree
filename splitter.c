@@ -4939,7 +4939,8 @@ void debug_data_print(char *pdata)
 {
     int i;
     u8 *p = (u8 *)pdata;
-    for(i = 0; i < DATA_SIZE; i++,p++)
+#if 0
+	for(i = 0; i < DATA_SIZE; i++,p++)
     {
         if(i%8 == 0)
         {
@@ -4948,7 +4949,9 @@ void debug_data_print(char *pdata)
         printf("%02x ", *p);
     }
     printf("\r\n");
-    return;
+#endif    
+	printf("print data addr is %p\r\n",pdata);
+return;
 }
 void debug_pdh_data_print(cluster_head_t *pclst, spt_dh *pdh)
 {

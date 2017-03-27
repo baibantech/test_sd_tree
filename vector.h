@@ -130,7 +130,7 @@ typedef struct spt_data_hd
     volatile int ref;/*引用计数*/
     u16 size;
     u16 rsv;
-    int rank;/*for test*/
+//    int rank;/*for test*/
     char *pdata;
 }spt_dh;
 

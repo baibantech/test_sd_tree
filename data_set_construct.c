@@ -432,6 +432,7 @@ void get_data_from_file(struct data_set_file *flist,long long start_off,long lon
 	return ;
 }
 extern void test_insert_data(char *pdata);
+extern void test_delete_data(char *pdata);
 void test_insert_proc(void *args)
 {
 	struct data_set_cache *cur = NULL;
@@ -449,7 +450,6 @@ void test_insert_proc(void *args)
 		{
 			break;
 		}
-		printf("cache addr is 0x%p\r\n",(void*)next->cache_mem);
 		per_cache_time_begin = rdtsc();
 		while(data = get_next_data(next))
 		{
@@ -476,24 +476,36 @@ void test_delete_proc(void *args)
 	struct data_set_cache *cur = NULL;
 	struct data_set_cache *next = NULL;
 	void *data = NULL;
+	int delete_cnt = 0;
+	unsigned long long per_cache_time_begin = 0;	
+	unsigned long long per_cache_time_end = 0;	
+	unsigned long long total_time_begin = 0;	
+	unsigned long long total_time_end = 0;	
 	do {
 		next = get_next_data_set_cache(cur);		
-		
+		if(NULL == next)
+		{
+			break;
+		}
+
+		per_cache_time_begin = rdtsc();
 		while(data = get_next_data(next))
 		{
-			delete_data(data);
+			delete_cnt++;
+			test_delete_data(data);
 		}
+		
+		per_cache_time_end = rdtsc();
+		printf("per cache delete cost: %lld\r\n", per_cache_time_end - per_cache_time_begin);
+		printf("delete data num is %d\r\n",delete_cnt);
 		
 		if(cur)
 		{
 			free(cur);
 		}
 		cur = next;
-		sleep(10);
+		sleep(0);
 	}while(cur);
 	
-	while(1)
-	{
-		sleep(10);
-	}
+	printf("delete over\r\n");
 }

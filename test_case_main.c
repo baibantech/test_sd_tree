@@ -322,7 +322,11 @@ int main(int argc,char *argv[])
 	g_thrd_id =0;
 	test_insert_proc(NULL);
 	sleep(10);
-	test_insert_proc(NULL);
+	//test_insert_proc(NULL);
+//	sleep(10);
+	test_delete_proc(NULL);
+	sleep(10);
+//	test_delete_proc(NULL);
 
 	while(1)
 	{
@@ -335,4 +339,8 @@ int main(int argc,char *argv[])
 void test_insert_data(char *pdata)
 {
 	insert_data(pgclst,pdata);
+}
+void test_delete_data(char *pdata)
+{
+	delete_data(pgclst,pdata);
 }

@@ -436,6 +436,10 @@ void test_insert_proc(void *args)
 	struct data_set_cache *next = NULL;
 	void *data = NULL;
 	int insert_cnt = 0;
+	unsigned long long per_cache_time_begin = 0;	
+	unsigned long long per_cache_time_end = 0;	
+	unsigned long long total_time_begin = 0;	
+	unsigned long long total_time_end = 0;	
 	
 	do {
 		next = get_next_data_set_cache(cur);		
@@ -444,13 +448,15 @@ void test_insert_proc(void *args)
 			break;
 		}
 		printf("cache addr is 0x%p\r\n",(void*)next->cache_mem);
+		per_cache_time_begin = rdtsc();
 		while(data = get_next_data(next))
 		{
 			//printf("data addr is 0x%p\r\n",data);
 			insert_cnt++;	
 			test_insert_data(data);
 		}
-		
+		per_cache_time_end = rdtsc();
+		printf("per cache insert cost: %lld\r\n", per_cache_time_end - per_cache_time_begin);
 		printf("insert data num is %d\r\n",insert_cnt);
 		if(cur)
 		{

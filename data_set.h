@@ -73,7 +73,6 @@ static inline void set_read_cache_unit_size(long long value)
 	data_set_config_cache_unit_len = value;
 }
 
-
 struct data_set_file*  get_data_set_file_list();
 int construct_data_set(struct data_set_file *list);
 void print_data_config();

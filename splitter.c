@@ -5097,7 +5097,7 @@ void debug_cluster_travl(cluster_head_t *pclst)
                 }
                 #endif
                 //pdh = (spt_dh *)(pcur_data-sizeof(spt_dh));
-                pdh->rank = rank;
+//                pdh->rank = rank;
                 rank--;
                 data = get_real_data(pclst, pcur_data);
                 if(!pclst->is_bottom)

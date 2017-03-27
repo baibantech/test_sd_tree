@@ -14,6 +14,8 @@
 #include <fcntl.h>
 #include "data_set.h"
 #include "data_cache.h"
+#include "vector.h"
+#include "chunk.h"
 
 #define DEFAULT_INS_LEN  1024
 #define DEFAULT_INS_NUM  2048

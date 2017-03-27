@@ -26,7 +26,7 @@ long long  data_set_config_instance_num = DEFAULT_INS_NUM;
 long long  data_set_config_random = DEFAULT_RANDOM_WAY;
 long long  data_set_config_file_len = DEFAULT_FILE_LEN;
 
-long long  data_set_config_cache_unit_len = 1024*256;
+long long  data_set_config_cache_unit_len = 1024*1024;
 
 long data_set_config_map_address = 0;
 long long data_set_config_map_read_start = -1;
@@ -435,7 +435,7 @@ void test_insert_proc(void *args)
 	struct data_set_cache *cur = NULL;
 	struct data_set_cache *next = NULL;
 	void *data = NULL;
-	
+	int insert_cnt = 0;
 	
 	do {
 		next = get_next_data_set_cache(cur);		
@@ -446,23 +446,20 @@ void test_insert_proc(void *args)
 		printf("cache addr is 0x%p\r\n",(void*)next->cache_mem);
 		while(data = get_next_data(next))
 		{
-			printf("data addr is 0x%p\r\n",data);
-			
+			//printf("data addr is 0x%p\r\n",data);
+			insert_cnt++;	
 			test_insert_data(data);
 		}
 		
+		printf("insert data num is %d\r\n",insert_cnt);
 		if(cur)
 		{
 			free(cur);
 		}
 		cur = next;
-		sleep(10);
+		sleep(0);
 	}while(cur);
-
-	while(1)
-	{
-		sleep(10);
-	}
+	printf("insert over\r\n");
 
 }
 

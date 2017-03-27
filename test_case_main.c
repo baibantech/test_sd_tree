@@ -321,7 +321,13 @@ int main(int argc,char *argv[])
 	
 	g_thrd_id =0;
 	test_insert_proc(NULL);
+	sleep(10);
+	test_insert_proc(NULL);
 
+	while(1)
+	{
+		sleep(1);
+	}
 	return 0;
 
 }

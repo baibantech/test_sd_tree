@@ -3316,7 +3316,8 @@ int delete_data(cluster_head_t *pclst, char *pdata)
     }
     else
     {
-        spt_debug("find_data err!\r\n");
+        //spt_debug("find_data err!\r\n");
+        spt_set_errno(ret);
         return ret;
     }
 } 

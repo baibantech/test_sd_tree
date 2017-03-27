@@ -432,7 +432,7 @@ void get_data_from_file(struct data_set_file *flist,long long start_off,long lon
 	return ;
 }
 extern void test_insert_data(char *pdata);
-extern void test_delete_data(char *pdata);
+extern int test_delete_data(char *pdata);
 void test_insert_proc(void *args)
 {
 	struct data_set_cache *cur = NULL;
@@ -476,6 +476,7 @@ void test_delete_proc(void *args)
 	struct data_set_cache *cur = NULL;
 	struct data_set_cache *next = NULL;
 	void *data = NULL;
+    int ret;
 	int delete_cnt = 0;
 	unsigned long long per_cache_time_begin = 0;	
 	unsigned long long per_cache_time_end = 0;	
@@ -489,10 +490,44 @@ void test_delete_proc(void *args)
 		}
 
 		per_cache_time_begin = rdtsc();
+        spt_thread_start(g_thrd_id);
 		while(data = get_next_data(next))
 		{
 			delete_cnt++;
-			test_delete_data(data);
+            if(delete_cnt%100 == 0)
+            {
+                spt_thread_exit(g_thrd_id);
+                spt_thread_start(g_thrd_id);
+            }
+try_again:
+			if(test_delete_data(data) < 0)
+            {
+                ret = spt_get_errno();
+                if(ret == SPT_MASKED)
+                {
+                    spt_thread_exit(g_thrd_id);
+                    spt_thread_start(g_thrd_id);
+                    goto try_again;
+                }
+                else if(ret == SPT_WAIT_AMT)
+                {
+                    spt_thread_exit(g_thrd_id);
+                    spt_thread_start(g_thrd_id);
+                    goto try_again;
+                }
+                else if(ret == SPT_NOMEM)
+                {
+                    printf("OOM,%d\t%s\r\n", __LINE__, __FUNCTION__);
+                    spt_thread_exit(g_thrd_id);
+                    break;
+                }
+                else
+                {
+                    printf("DELETE ERROR[%d],%d\t%s\r\n", ret,__LINE__, __FUNCTION__);
+                    spt_thread_exit(g_thrd_id);
+                    break;
+                }
+            }         
 		}
 		
 		per_cache_time_end = rdtsc();

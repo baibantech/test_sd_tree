@@ -340,7 +340,7 @@ void test_insert_data(char *pdata)
 {
 	insert_data(pgclst,pdata);
 }
-void test_delete_data(char *pdata)
+int test_delete_data(char *pdata)
 {
-	delete_data(pgclst,pdata);
+	return delete_data(pgclst,pdata);
 }

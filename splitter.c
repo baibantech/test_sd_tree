@@ -3358,7 +3358,7 @@ cluster_head_t *spt_cluster_init(u64 startbit,
     if(pclst == NULL)
         return NULL;
     plower_clst = cluster_init(1, startbit, endbit, thread_num, pf, pf2, 
-                                free_data, pf_con);
+                                pf_free, pf_con);
     if(plower_clst == NULL)
     {
         cluster_destroy(pclst);

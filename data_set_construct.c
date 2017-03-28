@@ -544,3 +544,60 @@ try_again:
 	
 	printf("delete over\r\n");
 }
+void test_memcmp()
+{
+    char *a, *b;
+    long long *x, *y;
+    int i;
+	unsigned long long per_cache_time_begin = 0;	
+	unsigned long long per_cache_time_end = 0;	
+	unsigned long long total_time_begin = 0;	
+	unsigned long long total_time_end = 0;
+    vec_cmpret_t cmpret;
+
+    a = malloc(4096);
+    b = malloc(4096);
+    x = (long long *)a;
+    y = (long long *)b;
+    per_cache_time_begin = rdtsc();
+    memset(x, 0xab, 4096);
+    per_cache_time_end = rdtsc();
+    printf("memset cost: %lld\r\n", per_cache_time_end - per_cache_time_begin);
+    per_cache_time_begin = rdtsc();
+    memcpy(x, y, 4096);
+    per_cache_time_end = rdtsc();
+    printf("memcpy cost: %lld\r\n", per_cache_time_end - per_cache_time_begin);
+    per_cache_time_begin = rdtsc();    
+    for(i=0;i<512;i++)
+    {
+        if(*x != *y)
+        {
+            printf("break%d\r\n", i);
+            break;
+        }
+        x++;
+        y++;
+    }
+    per_cache_time_end = rdtsc();
+    printf("my memcmp cost: %lld\r\n", per_cache_time_end - per_cache_time_begin);
+    
+    per_cache_time_begin = rdtsc();
+    memcmp(a, b, 4096);
+    per_cache_time_end = rdtsc();
+    printf("memcmp cost: %lld\r\n", per_cache_time_end - per_cache_time_begin);
+
+
+    per_cache_time_begin = rdtsc();
+    diff_identify(a, b, 0, 4096*8, &cmpret);
+    per_cache_time_end = rdtsc();
+    printf("diff_identify cost: %lld\r\n", per_cache_time_end - per_cache_time_begin);
+
+#if 0
+    per_cache_time_begin = rdtsc();
+    
+    per_cache_time_end = rdtsc();
+    printf("my memcmp cost: %lld\r\n", per_cache_time_end - per_cache_time_begin);
+#endif
+    
+    return;    
+}

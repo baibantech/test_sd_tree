@@ -3503,10 +3503,6 @@ int align_compare(u8 *a, u8 *b, s64 len, int align, vec_cmpret_t *result)
                 {
                     result->pos += 64;
                     lenbyte -= 8;
-                    if(ulla != 0)
-                    {
-                        result->flag = 0;
-                    }
                     continue;
                 }
                 else
@@ -3526,10 +3522,6 @@ int align_compare(u8 *a, u8 *b, s64 len, int align, vec_cmpret_t *result)
                     {
                         ret = -1;
                         c = a;
-                    }
-                    if(result->flag == 1 && ulla>>(64-fs) != 0)
-                    {
-                        result->flag = 0;
                     }
                     ulla = ulla << fs;
                     if(ulla != 0)
@@ -3557,10 +3549,6 @@ int align_compare(u8 *a, u8 *b, s64 len, int align, vec_cmpret_t *result)
                 {
                     result->pos += 32;
                     lenbyte -= 4;
-                    if(uia != 0)
-                    {
-                        result->flag = 0;
-                    }
                     continue;
                 }
                 else
@@ -3580,10 +3568,6 @@ int align_compare(u8 *a, u8 *b, s64 len, int align, vec_cmpret_t *result)
                     {
                         ret = -1;
                         c = a;
-                    }
-                    if(result->flag == 1 && uia>>(32-fs) != 0)
-                    {
-                        result->flag = 0;
                     }
                     uia = uia << fs;
                     if(uia != 0)
@@ -3612,10 +3596,6 @@ int align_compare(u8 *a, u8 *b, s64 len, int align, vec_cmpret_t *result)
                 {
                     result->pos += 16;
                     lenbyte -= 2;
-                    if(usa != 0)
-                    {
-                        result->flag = 0;
-                    }
                     continue;
                 }
                 else
@@ -3635,10 +3615,6 @@ int align_compare(u8 *a, u8 *b, s64 len, int align, vec_cmpret_t *result)
                     {
                         ret = -1;
                         c = a;
-                    }
-                    if(result->flag == 1 && usa>>(16-fs) != 0)
-                    {
-                        result->flag = 0;
                     }
                     usa = usa << fs;
                     if(usa != 0)
@@ -3666,10 +3642,6 @@ int align_compare(u8 *a, u8 *b, s64 len, int align, vec_cmpret_t *result)
                 {
                     result->pos += 8;
                     lenbyte --;
-                    if(uca != 0)
-                    {
-                        result->flag = 0;
-                    }
                     continue;
                 }
                 else
@@ -3689,10 +3661,6 @@ int align_compare(u8 *a, u8 *b, s64 len, int align, vec_cmpret_t *result)
                     {
                         ret = -1;
                         c = a;
-                    }
-                    if(result->flag == 1 && uca>>(8-fs) != 0)
-                    {
-                        result->flag = 0;
                     }
                     uca = uca << fs;
                     if(uca != 0)
@@ -3725,10 +3693,6 @@ int align_compare(u8 *a, u8 *b, s64 len, int align, vec_cmpret_t *result)
         ucb = ucb >> (8-bitend) << (8-bitend);
         if(uca == ucb)
         {
-            if(uca != 0)
-            {
-                result->flag = 0;
-            }    
             result->pos += bitend;
             result->smallfs = result->pos;
             ret = 0;
@@ -3751,10 +3715,6 @@ int align_compare(u8 *a, u8 *b, s64 len, int align, vec_cmpret_t *result)
             {
                 ret = -1;
                 c = a;
-            }
-            if(result->flag == 1 && uca>>(8-fs) != 0)
-            {
-                result->flag = 0;
             }
             uca = uca << fs;
             if(uca != 0)
@@ -4083,10 +4043,6 @@ int align_compare(u8 *a, u8 *b, s64 len, int align, vec_cmpret_t *result)
                 {
                     result->pos += 64;
                     lenbyte -= 8;
-                    if(ulla != 0)
-                    {
-                        result->flag = 0;
-                    }
                 }
                 else
                 {
@@ -4105,10 +4061,6 @@ int align_compare(u8 *a, u8 *b, s64 len, int align, vec_cmpret_t *result)
                 {
                     result->pos += 32;
                     lenbyte -= 4;
-                    if(uia != 0)
-                    {
-                        result->flag = 0;
-                    }
                 }
                 else
                 {
@@ -4128,10 +4080,6 @@ int align_compare(u8 *a, u8 *b, s64 len, int align, vec_cmpret_t *result)
                 {
                     result->pos += 16;
                     lenbyte -= 2;
-                    if(usa != 0)
-                    {
-                        result->flag = 0;
-                    }
                 }
                 else
                 {
@@ -4150,10 +4098,6 @@ perbyte:case 1:
                 {
                     result->pos += 8;
                     lenbyte --;
-                    if(uca != 0)
-                    {
-                        result->flag = 0;
-                    }
                 }
                 else
                 {
@@ -4172,10 +4116,6 @@ perbyte:case 1:
                     {
                         ret = -1;
                         c = a;
-                    }
-                    if(result->flag == 1 && uca>>(8-fs) != 0)
-                    {
-                        result->flag = 0;
                     }
                     uca = uca << fs;
                     if(uca != 0)
@@ -4212,10 +4152,6 @@ perbyte:case 1:
         ucb = ucb >> (8-bitend) << (8-bitend);
         if(uca == ucb)
         {
-            if(uca != 0)
-            {
-                result->flag = 0;
-            }    
             result->pos += bitend;
             result->smallfs = result->pos;
             ret = 0;
@@ -4238,10 +4174,6 @@ perbyte:case 1:
             {
                 ret = -1;
                 c = a;
-            }
-            if(result->flag == 1 && uca>>(8-fs) != 0)
-            {
-                result->flag = 0;
             }
             uca = uca << fs;
             if(uca != 0)
@@ -4470,10 +4402,6 @@ int bit_inbyte_cmp(u8 *a, u8 *b,u8 bitstart, u8 bitend, vec_cmpret_t *result)
     if(uca == ucb)
     {
         result->pos += bitend - bitstart;
-        if(uca != 0)
-        {
-            result->flag = 0;
-        }
         ret = 0;
     }
     else
@@ -4491,11 +4419,6 @@ int bit_inbyte_cmp(u8 *a, u8 *b,u8 bitstart, u8 bitend, vec_cmpret_t *result)
         {
             ret = -1;
         }
-        if(result->flag == 1 && uca>>(8-fs) != 0)
-        {
-            result->flag = 0;
-        }
-    
         /*计算较小数据相同位后的first set*/
         result->smallfs = result->pos;
         uca = uca << fs;
@@ -4534,7 +4457,6 @@ int diff_identify(char *a, char *b,u64 start, u64 len, vec_cmpret_t *result)
     bcstart = (u8 *)b + start/8;
     lenbyte =  (bitstart + len)/8;
     result->pos = start;
-    result->flag = 1;
     result->finish = 0;
 
     if(lenbyte == 0)
@@ -4554,10 +4476,6 @@ int diff_identify(char *a, char *b,u64 start, u64 len, vec_cmpret_t *result)
         if(uca == ucb)
         {
             result->pos += 8-bitstart;
-            if(uca != 0)
-            {
-                result->flag = 0;
-            }
         }
         else
         {
@@ -4576,12 +4494,7 @@ int diff_identify(char *a, char *b,u64 start, u64 len, vec_cmpret_t *result)
                 ret = -1;
             }
             result->smallfs = result->pos;
-            
-            if(result->flag == 1 && uca>>(8-fs) != 0)
-            {
-                result->flag = 0;
-            }
-            
+                        
             uca = uca << fs;
             if(uca == 0)
             {

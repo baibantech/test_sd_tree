@@ -322,9 +322,9 @@ int main(int argc,char *argv[])
 	g_thrd_id =0;
 	test_insert_proc(NULL);
 	sleep(10);
-	//test_insert_proc(NULL);
+	test_insert_proc(NULL);
 //	sleep(10);
-	test_delete_proc(NULL);
+//	test_delete_proc(NULL);
 	sleep(10);
 //	test_delete_proc(NULL);
 
@@ -334,6 +334,15 @@ int main(int argc,char *argv[])
 	}
 	return 0;
 
+}
+
+int main1()
+{
+    test_memcmp();
+    while(1)
+    {
+        sleep(1);
+    }
 }
 
 void test_insert_data(char *pdata)

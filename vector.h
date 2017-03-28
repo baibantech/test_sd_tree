@@ -236,7 +236,6 @@ typedef struct vec_cmpret
     u64 smallfs;    
 //    u64 bigfs;         /*bigdata first set 相对于开始比较的位的位置，没用?*/
     u64 pos;        /*比较到哪一位开始不等，如果两数相等，则指向比较范围外的下一位?*/
-    u32 flag;        /*相同的位是否全零，1表示全零*/
     u32 finish;
 }vec_cmpret_t;
 

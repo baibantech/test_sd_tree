@@ -76,9 +76,9 @@ struct data_set_cache* get_data_set_cache(long long cache_idx)
 		cache_num++;
 	}
 
-	printf("cache max is %d\r\n",cache_num);
+	//printf("cache max is %d\r\n",cache_num);
 
-	printf("cache idx is %d\r\n",cache_idx);
+	//printf("cache idx is %d\r\n",cache_idx);
 	set_cache->cache_idx = cache_idx;
 	if(cache_idx < (cache_num -1))
 	{
@@ -93,7 +93,7 @@ struct data_set_cache* get_data_set_cache(long long cache_idx)
 		free(set_cache);
 		return NULL;
 	}
-	printf("cache ins num is %d\r\n",set_cache->ins_num);
+	//printf("cache ins num is %d\r\n",set_cache->ins_num);
 	set_cache->cur_ins_id = 0;
 	set_cache->ins_size = data_set_config_instance_len;
 	set_cache->cache_mem = mem_start + start_off  + cache_idx*data_set_config_cache_unit_len;

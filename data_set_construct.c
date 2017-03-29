@@ -78,7 +78,7 @@ struct data_set_file*  get_data_set_file_list()
 			sprintf(instance_len,"%d",data_set_config_instance_len);
 
 			sprintf(cur->set_name,"test_case_%s_%s_id%d",instance_num,instance_len,i);
-			printf("data set file namae is %s\r\n",cur->set_name);	
+			//printf("data set file namae is %s\r\n",cur->set_name);	
 			if(i == (data_file_num -1))
 			{
 				cur->set_len = data_set_size - (data_file_len*i) ;
@@ -89,8 +89,8 @@ struct data_set_file*  get_data_set_file_list()
 				cur->set_len = data_file_len;
 				cur->set_num = data_instance_num_per_file;
 			}
-			printf("data set file len is %d\r\n",cur->set_len);
-			printf("data set file num is %d\r\n",cur->set_num);
+	//		printf("data set file len is %d\r\n",cur->set_len);
+	//		printf("data set file num is %d\r\n",cur->set_num);
 			
 			cur->set_index = i;
 			cur->set_file_status = FILE_STATUS_NULL;
@@ -105,7 +105,7 @@ struct data_set_file*  get_data_set_file_list()
 				pre->next = cur;
 				pre = cur;
 			}
-			printf("cur data set file pointer is %p\r\n",cur);
+		//	printf("cur data set file pointer is %p\r\n",cur);
 		}
 		else
 		{
@@ -170,7 +170,7 @@ int construct_data_set(struct data_set_file *list)
 	cur = list;
 	while(cur)
 	{
-		printf("cur data set file pointer is %p\r\n",cur);
+		//printf("cur data set file pointer is %p\r\n",cur);
 		if(access(cur->set_name,F_OK)== 0){
 			printf("data set file exist %s\r\n",cur->set_name);
 			if(data_set_config_random != DEFAULT_RANDOM_WAY)
@@ -199,7 +199,7 @@ int construct_data_set(struct data_set_file *list)
 		{
 			instance_size = cur->set_len/cur->set_num;	
 			instance_mem = malloc(instance_size);
-			printf("instance size is %d\r\n",instance_size);
+			//printf("instance size is %d\r\n",instance_size);
 			if(!instance_mem){
 				close(dev_random_id);
 				fclose(stream);
@@ -333,7 +333,7 @@ void*  map_data_set_file_anonymous(struct data_set_file *flist,long start_addr)
 		return NULL;
 	}
 
-	printf("data set len is %d\r\n",data_set_len);
+	//printf("data set len is %d\r\n",data_set_len);
 	map_addr = mmap(start_addr ,data_set_len ,PROT_READ|PROT_WRITE,MAP_ANONYMOUS|MAP_PRIVATE,-1,0);
 	
 	printf("map_addr is %p\r\n",map_addr);
@@ -357,7 +357,7 @@ void get_data_file(struct data_set_file *f, long long off,void *start,long long 
 	long long len = read_len;
 	long long i = 0;
 
-	printf("fd is %d ,off is %lld,start is 0x%p,read len is %lld\r\n",f->file_fd,off,start,read_len);
+	//printf("fd is %d ,off is %lld,start is 0x%p,read len is %lld\r\n",f->file_fd,off,start,read_len);
 	if(-1 != f->file_fd)/*map shared*/
 	{
 		for(i = 0 ; i < read_len ; i++)
@@ -377,7 +377,7 @@ void get_data_file(struct data_set_file *f, long long off,void *start,long long 
 			
 		lseek(fd,off,SEEK_SET);
 		r_cnt =read(fd,start,read_len);
-		printf("r_cnt is %d\r\n",r_cnt);
+		//printf("r_cnt is %d\r\n",r_cnt);
 		if(r_cnt == -1)
 		{
 			perror("read:");
@@ -395,7 +395,7 @@ void get_data_from_file(struct data_set_file *flist,long long start_off,long lon
 	long long start = start_off;
 	long long read_len = 0;
 	struct data_set_file *cur = flist;
-	printf("start off is %lld,len is %lld\r\n",start_off,len);	
+	//printf("start off is %lld,len is %lld\r\n",start_off,len);	
 	while(cur)
 	{
 		if(cur->set_len <= start)
@@ -445,8 +445,7 @@ void test_insert_proc(void *args)
 	int ret =0;
 	unsigned long long per_cache_time_begin = 0;	
 	unsigned long long per_cache_time_end = 0;	
-	unsigned long long total_time_begin = 0;	
-	unsigned long long total_time_end = 0;	
+	unsigned long long total_time = 0;	
 	
 	do {
 		next = get_next_data_set_cache(cur);		
@@ -499,8 +498,8 @@ try_again:
 		}
 		spt_thread_exit(g_thrd_id);
 		per_cache_time_end = rdtsc();
-		printf("per cache insert cost: %lld\r\n", per_cache_time_end - per_cache_time_begin);
-		printf("insert data num is %d\r\n",insert_cnt);
+		total_time = per_cache_time_end - per_cache_time_begin;
+		printf("thread id %d ,per cache insert cost: %lld,insert_cnt is %d,average cost is %d\r\n",g_thrd_id, total_time,insert_cnt,total_time/insert_cnt);
 		if(cur)
 		{
 			free(cur);
@@ -509,7 +508,6 @@ try_again:
 		sleep(0);
 	}while(cur);
 	printf("insert over\r\n");
-
 }
 
 void test_delete_proc(void *args)
@@ -521,8 +519,7 @@ void test_delete_proc(void *args)
 	int delete_cnt = 0;
 	unsigned long long per_cache_time_begin = 0;	
 	unsigned long long per_cache_time_end = 0;	
-	unsigned long long total_time_begin = 0;	
-	unsigned long long total_time_end = 0;	
+	unsigned long long total_time = 0;	
 	do {
 		next = get_next_data_set_cache(cur);		
 		if(NULL == next)
@@ -578,9 +575,8 @@ try_again:
 		spt_thread_exit(g_thrd_id);
 		
 		per_cache_time_end = rdtsc();
-		printf("per cache delete cost: %lld\r\n", per_cache_time_end - per_cache_time_begin);
-		printf("delete data num is %d\r\n",delete_cnt);
-		
+		total_time = per_cache_time_end - per_cache_time_begin;
+		printf("thread id %d ,per cache delete cost: %lld,delete_cnt is %d,average cost is %d\r\n",g_thrd_id, total_time,delete_cnt,total_time/delete_cnt);
 		if(cur)
 		{
 			free(cur);

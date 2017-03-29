@@ -4,8 +4,12 @@
 	> Mail: ma6174@163.com 
 	> Created Time: Tue 21 Feb 2017 07:35:16 PM PST
  ************************************************************************/
-
-#include<stdio.h>
+#define _GNU_SOURCE
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <pthread.h>
+#include <sched.h>
 #include "data_set.h"
 #include "data_cache.h"
 #include "vector.h"
@@ -14,6 +18,10 @@
 char test_case_name[64] = {'t','e','s','t','_','c','a','s','e'};
 
 typedef void (*test_proc_pfn)(void *args);
+
+void* test_insert_thread(void *arg);
+
+void* test_delete_thread(void *arg);
 
 enum cmd_index
 {
@@ -261,7 +269,11 @@ int main(int argc,char *argv[])
 	int ret = -1;
 	void *addr = NULL;
 	long long get_data_len;
-	
+	int i = 0 ;
+	int err;
+	pthread_t ntid;
+	int thread_num = 0;
+
 	if(parse_cmdline(argc,argv))
 	{
 		return 0;
@@ -300,8 +312,9 @@ int main(int argc,char *argv[])
 	set_data_size(data_set_config_instance_len);
 	
 	//init cluster head
-	
-    pgclst = spt_cluster_init(0,DATA_BIT_MAX, 1, 
+	thread_num = data_set_config_insert_thread_num + data_set_config_delete_thread_num ;	
+    printf("thread_num is %d\r\n",thread_num);
+	pgclst = spt_cluster_init(0,DATA_BIT_MAX, thread_num, 
                               tree_get_key_from_data,
                               tree_free_key,
                               tree_free_data,
@@ -312,14 +325,30 @@ int main(int argc,char *argv[])
         return 1;
     }
 
-    g_thrd_h = spt_thread_init(1);
+    g_thrd_h = spt_thread_init(thread_num);
     if(g_thrd_h == NULL)
     {
         spt_debug("spt_thread_init err\r\n");
         return 1;
 	}
 	
-	g_thrd_id =0;
+    for(i = 0;  i  < data_set_config_insert_thread_num ; i++)
+    {
+        err = pthread_create(&ntid, NULL, test_insert_thread, (void *)i);
+        if (err != 0)
+            printf("can't create thread: %s\n", strerror(err));
+    }
+
+	sleep(1);
+	
+    for(i = 0;  i  < data_set_config_delete_thread_num ; i++)
+    {
+        err = pthread_create(&ntid, NULL, test_delete_thread, (void *)(data_set_config_insert_thread_num+i));
+        if (err != 0)
+            printf("can't create thread: %s\n", strerror(err));
+    }
+
+	#if 0
 	test_insert_proc(NULL);
 	sleep(10);
 	test_insert_proc(NULL);
@@ -327,6 +356,8 @@ int main(int argc,char *argv[])
 //	test_delete_proc(NULL);
 	sleep(10);
 //	test_delete_proc(NULL);
+	#endif
+
 
 	while(1)
 	{
@@ -345,11 +376,51 @@ int main1()
     }
 }
 
-void test_insert_data(char *pdata)
+void* test_insert_data(char *pdata)
 {
-	insert_data(pgclst,pdata);
+	return insert_data(pgclst,pdata);
 }
 int test_delete_data(char *pdata)
 {
 	return delete_data(pgclst,pdata);
 }
+
+void* test_insert_thread(void *arg)
+{
+	int i = (long)arg;
+	cpu_set_t mask;
+	g_thrd_id = i;
+	CPU_ZERO(&mask);
+	CPU_SET(i,&mask);
+	if(sched_setaffinity(0,sizeof(mask),&mask)== -1)
+	{
+		printf("warning: could not set CPU AFFINITY\r\n");
+	}
+	
+	test_insert_proc(i);
+	while(1)
+	{
+		sleep(1);
+	}
+}
+
+void* test_delete_thread(void *arg)
+{
+	int i = (long)arg;
+	cpu_set_t mask;
+	g_thrd_id = i;
+	CPU_ZERO(&mask);
+	CPU_SET(i,&mask);
+	if(sched_setaffinity(0,sizeof(mask),&mask)== -1)
+	{
+		printf("warning: could not set CPU AFFINITY\r\n");
+	}
+	
+	test_delete_proc(i);
+	while(1)
+	{
+		sleep(1);
+	}
+}
+
+

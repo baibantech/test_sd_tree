@@ -32,6 +32,9 @@ extern long long  data_set_config_cache_unit_len;
 extern long data_set_config_map_address ;
 extern long long data_set_config_map_read_start ;
 extern long long data_set_config_map_read_len;
+extern int data_set_config_insert_thread_num;
+extern int data_set_config_delete_thread_num;
+
 
 static inline void set_instance_len_config(long long  len)
 {
@@ -72,7 +75,15 @@ static inline void set_read_cache_unit_size(long long value)
 {
 	data_set_config_cache_unit_len = value;
 }
+static inline void set_insert_thread_num(int value)
+{
+	data_set_config_insert_thread_num = value;
+}
 
+static inline void set_delete_thread_num(int value)
+{
+	data_set_config_delete_thread_num = value;
+}
 struct data_set_file*  get_data_set_file_list();
 int construct_data_set(struct data_set_file *list);
 void print_data_config();

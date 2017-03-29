@@ -21,7 +21,7 @@
 #define DEFAULT_INS_NUM  2048
 #define DEFAULT_RANDOM_WAY 1
 #define DEFAULT_FILE_LEN 1024*1024
-
+unsigned long long spt_no_found_num = 0;
 long long  data_set_config_instance_len = DEFAULT_INS_LEN;
 long long  data_set_config_instance_num = DEFAULT_INS_NUM;
 
@@ -33,6 +33,9 @@ long long  data_set_config_cache_unit_len = 1024*1024;
 long data_set_config_map_address = 0;
 long long data_set_config_map_read_start = -1;
 long long data_set_config_map_read_len = -1;
+
+int data_set_config_insert_thread_num = 2;
+int data_set_config_delete_thread_num = 2;
 
 struct data_set_file*  get_data_set_file_list()
 {
@@ -431,7 +434,7 @@ void get_data_from_file(struct data_set_file *flist,long long start_off,long lon
 			
 	return ;
 }
-extern void test_insert_data(char *pdata);
+extern void* test_insert_data(char *pdata);
 extern int test_delete_data(char *pdata);
 void test_insert_proc(void *args)
 {
@@ -439,6 +442,7 @@ void test_insert_proc(void *args)
 	struct data_set_cache *next = NULL;
 	void *data = NULL;
 	int insert_cnt = 0;
+	int ret =0;
 	unsigned long long per_cache_time_begin = 0;	
 	unsigned long long per_cache_time_end = 0;	
 	unsigned long long total_time_begin = 0;	
@@ -451,12 +455,49 @@ void test_insert_proc(void *args)
 			break;
 		}
 		per_cache_time_begin = rdtsc();
+		
+		spt_thread_start(g_thrd_id);
 		while(data = get_next_data(next))
 		{
-			//printf("data addr is 0x%p\r\n",data);
-			insert_cnt++;	
-			test_insert_data(data);
+	
+			insert_cnt++;
+//			test_insert_data(data);
+#if 1			
+            if(insert_cnt%100 == 0)
+            {
+                spt_thread_exit(g_thrd_id);
+                spt_thread_start(g_thrd_id);
+            }
+try_again:
+			if(NULL == test_insert_data(data))
+            {
+                ret = spt_get_errno();
+                if(ret == SPT_MASKED)
+                {
+                    spt_thread_exit(g_thrd_id);
+                    spt_thread_start(g_thrd_id);
+                    goto try_again;
+                }
+                else if(ret == SPT_WAIT_AMT)
+                {
+                    spt_thread_exit(g_thrd_id);
+                    spt_thread_start(g_thrd_id);
+                    goto try_again;
+                }
+                else if(ret == SPT_NOMEM)
+                {
+                    printf("OOM,%d\t%s\r\n", __LINE__, __FUNCTION__);
+                    break;
+                }
+                else
+                {
+                    printf("DELETE ERROR[%d],%d\t%s\r\n", ret,__LINE__, __FUNCTION__);
+                    break;
+                }
+			}
+#endif
 		}
+		spt_thread_exit(g_thrd_id);
 		per_cache_time_end = rdtsc();
 		printf("per cache insert cost: %lld\r\n", per_cache_time_end - per_cache_time_begin);
 		printf("insert data num is %d\r\n",insert_cnt);
@@ -500,35 +541,41 @@ void test_delete_proc(void *args)
                 spt_thread_start(g_thrd_id);
             }
 try_again:
-			if(test_delete_data(data) < 0)
+			if(ret = test_delete_data(data) < 0)
             {
-                ret = spt_get_errno();
-                if(ret == SPT_MASKED)
-                {
-                    spt_thread_exit(g_thrd_id);
-                    spt_thread_start(g_thrd_id);
-                    goto try_again;
-                }
-                else if(ret == SPT_WAIT_AMT)
-                {
-                    spt_thread_exit(g_thrd_id);
-                    spt_thread_start(g_thrd_id);
-                    goto try_again;
-                }
-                else if(ret == SPT_NOMEM)
-                {
-                    printf("OOM,%d\t%s\r\n", __LINE__, __FUNCTION__);
-                    spt_thread_exit(g_thrd_id);
-                    break;
-                }
-                else
-                {
-                    printf("DELETE ERROR[%d],%d\t%s\r\n", ret,__LINE__, __FUNCTION__);
-                    spt_thread_exit(g_thrd_id);
-                    break;
-                }
-            }         
+                if(-1 == ret)
+				{
+					atomic64_add(1,(atomic64_t*)&spt_no_found_num);
+				}
+				else
+				{
+					ret = spt_get_errno();
+					if(ret == SPT_MASKED)
+					{
+						spt_thread_exit(g_thrd_id);
+						spt_thread_start(g_thrd_id);
+						goto try_again;
+					}
+					else if(ret == SPT_WAIT_AMT)
+					{
+						spt_thread_exit(g_thrd_id);
+						spt_thread_start(g_thrd_id);
+						goto try_again;
+					}
+					else if(ret == SPT_NOMEM)
+					{
+						printf("OOM,%d\t%s\r\n", __LINE__, __FUNCTION__);
+						break;
+					}
+					else
+					{
+						printf("DELETE ERROR[%d],%d\t%s\r\n", ret,__LINE__, __FUNCTION__);
+						break;
+					}
+				}
+            } 
 		}
+		spt_thread_exit(g_thrd_id);
 		
 		per_cache_time_end = rdtsc();
 		printf("per cache delete cost: %lld\r\n", per_cache_time_end - per_cache_time_begin);

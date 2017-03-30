@@ -1889,6 +1889,7 @@ int find_data(cluster_head_t *pclst, query_info_t *pqinfo)
     int va_old, va_new;
     u8 direction;
     int ret = SPT_NOT_FOUND;
+    int retb;
     vec_cmpret_t cmpres;
     insert_info_t st_insert_info;
     char *pdata, *prdata;
@@ -2108,11 +2109,13 @@ refind_forward:
                     //cur_vec.val = atomic64_cmpxchg((atomic64_t *)pcur, cur_vec.val, tmp_vec.val);
                     if(cur_vec.val == atomic64_cmpxchg((atomic64_t *)pcur, cur_vec.val, tmp_vec.val))//delete succ
                     {
-                        ret = vec_free_to_buf(pclst, vecid, g_thrd_id);
-                        if(ret != SPT_OK)
+                        retb = vec_free_to_buf(pclst, vecid, g_thrd_id);
+                        if(retb != SPT_OK)
                         {
                             finish_key_cb(prdata);
-                            return ret;
+                            if(ret == SPT_OK)
+                                return ret;
+                            return retb;
                         }
                         ///TODO:取新值后再continue
                     }
@@ -2227,11 +2230,13 @@ refind_forward:
                         //cur_vec.val = atomic64_cmpxchg((atomic64_t *)pcur, cur_vec.val, tmp_vec.val);
                         if(cur_vec.val == atomic64_cmpxchg((atomic64_t *)pcur, cur_vec.val, tmp_vec.val))//delete succ
                         {
-                            ret = vec_free_to_buf(pclst, vecid, g_thrd_id);
-                            if(ret != SPT_OK)
+                            retb = vec_free_to_buf(pclst, vecid, g_thrd_id);
+                            if(retb != SPT_OK)
                             {
                                 finish_key_cb(prdata);
-                                return ret;
+                                if(ret == SPT_OK)
+                                    return ret;
+                                return retb;
                             }
                         }
                             cur_vec.val = pcur->val;
@@ -2312,11 +2317,13 @@ refind_forward:
                         //cur_vec.val = atomic64_cmpxchg((atomic64_t *)pcur, cur_vec.val, tmp_vec.val);
                         if(cur_vec.val == atomic64_cmpxchg((atomic64_t *)pcur, cur_vec.val, tmp_vec.val))//delete succ
                         {
-                            ret = vec_free_to_buf(pclst, vecid, g_thrd_id);
-                            if(ret != SPT_OK)
+                            retb = vec_free_to_buf(pclst, vecid, g_thrd_id);
+                            if(retb != SPT_OK)
                             {
                                 finish_key_cb(prdata);
-                                return ret;
+                                if(ret == SPT_OK)
+                                    return ret;
+                                return retb;
                             }
                         }
                         cur_vec.val = pcur->val;
@@ -2670,11 +2677,13 @@ refind_forward:
                         //cur_vec.val = atomic64_cmpxchg((atomic64_t *)pcur, cur_vec.val, tmp_vec.val);
                         if(cur_vec.val == atomic64_cmpxchg((atomic64_t *)pcur, cur_vec.val, tmp_vec.val))//delete succ
                         {
-                            ret = vec_free_to_buf(pclst, vecid, g_thrd_id);
-                            if(ret != SPT_OK)
+                            retb = vec_free_to_buf(pclst, vecid, g_thrd_id);
+                            if(retb != SPT_OK)
                             {
                                 finish_key_cb(prdata);
-                                return ret;
+                                if(ret == SPT_OK)
+                                    return ret;
+                                return retb;
                             }
                             continue;
                         }
@@ -2771,11 +2780,13 @@ refind_forward:
                             //cur_vec.val = atomic64_cmpxchg((atomic64_t *)pcur, cur_vec.val, tmp_vec.val);
                             if(cur_vec.val == atomic64_cmpxchg((atomic64_t *)pcur, cur_vec.val, tmp_vec.val))//delete succ
                             {
-                                ret = vec_free_to_buf(pclst, vecid, g_thrd_id);
-                                if(ret != SPT_OK)
+                                retb = vec_free_to_buf(pclst, vecid, g_thrd_id);
+                                if(retb != SPT_OK)
                                 {
                                     finish_key_cb(prdata);
-                                    return ret;
+                                    if(ret == SPT_OK)
+                                        return ret;
+                                    return retb;
                                 }
                             }
                                 cur_vec.val = pcur->val;
@@ -2878,11 +2889,13 @@ refind_forward:
                             //cur_vec.val = atomic64_cmpxchg((atomic64_t *)pcur, cur_vec.val, tmp_vec.val);
                             if(cur_vec.val == atomic64_cmpxchg((atomic64_t *)pcur, cur_vec.val, tmp_vec.val))//delete succ
                             {
-                                ret = vec_free_to_buf(pclst, vecid, g_thrd_id);
-                                if(ret != SPT_OK)
+                                retb = vec_free_to_buf(pclst, vecid, g_thrd_id);
+                                if(retb != SPT_OK)
                                 {
                                     finish_key_cb(prdata);
-                                    return ret;
+                                    if(ret == SPT_OK)
+                                        return ret;
+                                    return retb;
                                 }
                             }
                                 cur_vec.val = pcur->val;
@@ -3068,7 +3081,7 @@ refind_forward:
                 assert(0);
             }
         }
-        pqinfo->ref_cnt = va_new;
+        //pqinfo->ref_cnt = va_new;
         if(va_old == 1)
         {
             if(pcur == (spt_vec *)vec_id_2_ptr(pclst,pclst->vec_head))
@@ -3080,12 +3093,14 @@ refind_forward:
                     spt_set_data_free_flag(pdh, pqinfo->free_flag);
                     db_free_to_buf(pclst,cur_data, g_thrd_id);
                     finish_key_cb(prdata);
+                    pqinfo->ref_cnt = 0;
                     return SPT_OK;
                 }
                 else
                 {
                     cur_data = SPT_INVALID;
                     atomic_add_return(1,(atomic_t *)&pdh->ref);
+                    ret = SPT_NOT_FOUND;
                     goto refind_start;
                 }
             }
@@ -3100,17 +3115,21 @@ refind_forward:
                 op = SPT_OP_FIND;
                 pcur = ppre;
                 cur_data = SPT_INVALID;
+                pqinfo->ref_cnt = 0;
                 goto refind_forward;
             }
             else
             {
                 atomic_add_return(1,(atomic_t *)&pdh->ref);
                 cur_data = SPT_INVALID;
+                ret = SPT_NOT_FOUND;
                 goto refind_start;
             }
         }
         finish_key_cb(prdata);
-        return ret;
+        pqinfo->ref_cnt = va_new;
+        atomic64_add(1,(atomic64_t *)&g_dbg_info.delete_ok);
+        return SPT_OK;
     default:
         break;
     }
@@ -4927,9 +4946,10 @@ void debug_cluster_travl(cluster_head_t *pclst)
     char *pcur_data = NULL;
     u64 signpost;
     travl_info *pnode;
-    u16 rank;
+    u32 ref_total;
     char *data;
 
+    ref_total = 0;
     signpost = 0;
     spt_stack_init(pstack, 1000);
     cur_data = SPT_INVALID;
@@ -4944,12 +4964,13 @@ void debug_cluster_travl(cluster_head_t *pclst)
         debug_travl_stack_destroy(pstack);
         return;
     }
-    rank = pclst->data_total;
+
     cur_data = st_vec_f.data;
     if(cur_data != SPT_NULL)
     {
         pdh = (spt_dh *)db_id_2_ptr(pclst, cur_data);
         pcur_data = pdh->pdata;
+        ref_total += pdh->ref;
     }
     debug_vec_print(&st_vec_f, cur_vecid);
 #if 0
@@ -5012,7 +5033,7 @@ void debug_cluster_travl(cluster_head_t *pclst)
                 #endif
                 //pdh = (spt_dh *)(pcur_data-sizeof(spt_dh));
 //                pdh->rank = rank;
-                rank--;
+//                rank--;
                 data = get_real_data(pclst, pcur_data);
                 if(!pclst->is_bottom)
                 {
@@ -5032,6 +5053,8 @@ void debug_cluster_travl(cluster_head_t *pclst)
                 {
                     printf("\r\n");
                     debug_travl_stack_destroy(pstack);
+                    printf("\r\n@@@@@@@@ data_total:%d\tref_total:%d@@@@@@@@\r\n", 
+                    pclst->data_total, ref_total);                    
                     return;
                 }
                 signpost = pnode->signpost;
@@ -5057,6 +5080,7 @@ void debug_cluster_travl(cluster_head_t *pclst)
                     cur_data = st_vec_f.data;
                     pdh = (spt_dh *)db_id_2_ptr(pclst, cur_data);
                     pcur_data = pdh->pdata;
+                    ref_total += pdh->ref;
                     printf("\r\n@@data[%p],bit:%lld\r\n", pcur_data, st_vec_f.pos);
                     debug_vec_print(&st_vec_f, cur_vecid);
                     debug_travl_stack_push(pstack,&st_vec_f, signpost);
@@ -5068,6 +5092,8 @@ void debug_cluster_travl(cluster_head_t *pclst)
         }
     }
     debug_travl_stack_destroy(pstack);
+    printf("\r\n@@@@@@@@ data_total:%d\tref_total:%d@@@@@@@@\r\n", 
+    pclst->data_total, ref_total);
     return;
 }
 

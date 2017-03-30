@@ -332,11 +332,11 @@ int main(int argc,char *argv[])
         spt_debug("spt_thread_init err\r\n");
         return 1;
 	}
-
+#if 0
 	err = pthread_create(&ntid, NULL, test_divid_thread, (void *)thread_num);
 	if (err != 0)
 		printf("can't create thread: %s\n", strerror(err));
-
+#endif
 
 	g_thrd_id = 0;
 	test_insert_thread(0);

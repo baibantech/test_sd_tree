@@ -35,8 +35,8 @@ long data_set_config_map_address = 0;
 long long data_set_config_map_read_start = -1;
 long long data_set_config_map_read_len = -1;
 
-int data_set_config_insert_thread_num = 11;
-int data_set_config_delete_thread_num = 0;
+int data_set_config_insert_thread_num = 2;
+int data_set_config_delete_thread_num = 2;
 
 struct data_set_file*  get_data_set_file_list()
 {

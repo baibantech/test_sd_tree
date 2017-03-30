@@ -339,7 +339,6 @@ int main(int argc,char *argv[])
             printf("can't create thread: %s\n", strerror(err));
     }
 
-	sleep(1);
 	
     for(i = 0;  i  < data_set_config_delete_thread_num ; i++)
     {

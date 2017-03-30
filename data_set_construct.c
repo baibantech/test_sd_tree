@@ -22,6 +22,7 @@
 #define DEFAULT_RANDOM_WAY 1
 #define DEFAULT_FILE_LEN 1024*1024
 unsigned long long spt_no_found_num = 0;
+unsigned long long spt_merge_num = 0;
 long long  data_set_config_instance_len = DEFAULT_INS_LEN;
 long long  data_set_config_instance_num = DEFAULT_INS_NUM;
 
@@ -443,6 +444,8 @@ void test_insert_proc(void *args)
 	void *data = NULL;
 	int insert_cnt = 0;
 	int ret =0;
+	void *ret_data = NULL;
+	unsigned long long merge_cnt = 0;
 	unsigned long long per_cache_time_begin = 0;	
 	unsigned long long per_cache_time_end = 0;	
 	unsigned long long total_time = 0;	
@@ -453,6 +456,7 @@ void test_insert_proc(void *args)
 		{
 			break;
 		}
+		insert_cnt =0;
 		per_cache_time_begin = rdtsc();
 		
 		spt_thread_start(g_thrd_id);
@@ -468,7 +472,7 @@ void test_insert_proc(void *args)
                 spt_thread_start(g_thrd_id);
             }
 try_again:
-			if(NULL == test_insert_data(data))
+			if(NULL ==(ret_data =  test_insert_data(data)))
             {
                 ret = spt_get_errno();
                 if(ret == SPT_MASKED)
@@ -494,12 +498,20 @@ try_again:
                     break;
                 }
 			}
+		else
+		{
+			if(ret_data != data)
+			{
+				//printf("ret_data is %p,data is %p\r\n",ret_data,data);
+				merge_cnt++;		
+			}	
+		}
 #endif
 		}
 		spt_thread_exit(g_thrd_id);
 		per_cache_time_end = rdtsc();
 		total_time = per_cache_time_end - per_cache_time_begin;
-		printf("thread id %d ,per cache insert cost: %lld,insert_cnt is %d,average cost is %d\r\n",g_thrd_id, total_time,insert_cnt,total_time/insert_cnt);
+		printf("thread id %d ,per cache insert cost: %lld,insert_cnt is %d,merge_cnt is %lld,average cost is %d\r\n",g_thrd_id, total_time,insert_cnt,merge_cnt,total_time/insert_cnt);
 		if(cur)
 		{
 			free(cur);
@@ -526,7 +538,7 @@ void test_delete_proc(void *args)
 		{
 			break;
 		}
-
+		delete_cnt = 0;
 		per_cache_time_begin = rdtsc();
         spt_thread_start(g_thrd_id);
 		while(data = get_next_data(next))
@@ -538,7 +550,7 @@ void test_delete_proc(void *args)
                 spt_thread_start(g_thrd_id);
             }
 try_again:
-			if(ret = test_delete_data(data) < 0)
+			if((ret = test_delete_data(data)) < 0)
             {
                 if(-1 == ret)
 				{

@@ -1735,7 +1735,7 @@ spt_divided_info *spt_divided_info_init(spt_sort_info *psort, int dvd_times,
 int divide_sub_cluster(cluster_head_t *pclst, spt_dh_ext *pup)
 {
     int loop, dataid, ins_dvb_id;
-    int move_time = 2;
+    int move_time = 5;
 //    int move_per_cnt = 100;
     spt_sort_info *psort;
     spt_divided_info *pdinfo;

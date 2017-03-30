@@ -54,8 +54,8 @@
 
 
 #define SPT_SORT_ARRAY_SIZE (4096*8)
-#define SPT_DVD_CNT_PER_TIME (10)
-#define SPT_DVD_THRESHOLD_VA (50)
+#define SPT_DVD_CNT_PER_TIME (100000)
+#define SPT_DVD_THRESHOLD_VA (1000000)
 
 typedef char*(*spt_cb_get_key)(char *);
 typedef void (*spt_cb_free)(char *);

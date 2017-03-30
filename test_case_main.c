@@ -22,6 +22,7 @@ typedef void (*test_proc_pfn)(void *args);
 void* test_insert_thread(void *arg);
 
 void* test_delete_thread(void *arg);
+void* test_divid_thread(void *arg);
 
 enum cmd_index
 {
@@ -331,7 +332,12 @@ int main(int argc,char *argv[])
         spt_debug("spt_thread_init err\r\n");
         return 1;
 	}
-	
+
+	err = pthread_create(&ntid, NULL, test_divid_thread, (void *)thread_num);
+	if (err != 0)
+		printf("can't create thread: %s\n", strerror(err));
+
+
 	g_thrd_id = 0;
 	test_insert_thread(0);
 	sleep(10);    
@@ -428,4 +434,21 @@ void* test_delete_thread(void *arg)
 	}
 }
 
-
+void *test_divid_thread(void *arg)
+{
+	int i = (long)arg;
+	cpu_set_t mask;
+	g_thrd_id = i;
+	CPU_ZERO(&mask);
+	CPU_SET(i,&mask);
+	if(sched_setaffinity(0,sizeof(mask),&mask)== -1)
+	{
+		printf("warning: could not set CPU AFFINITY\r\n");
+	}
+	
+	while(1)
+	{
+		sleep(1);
+		spt_divided_scan(pgclst);
+	}
+}

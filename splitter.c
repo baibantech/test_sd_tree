@@ -3308,7 +3308,7 @@ int delete_data(cluster_head_t *pclst, char *pdata)
     qinfo.startid = pnext_clst->vec_head;
     qinfo.endbit = pnext_clst->endbit;
     qinfo.data = pdata;
-	qinfo.ref_cnt = -1;
+	qinfo.ref_cnt = -10000;
     ret = find_data(pnext_clst,&qinfo);
     if(ret >= 0)
     {

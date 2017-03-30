@@ -332,7 +332,10 @@ int main(int argc,char *argv[])
         return 1;
 	}
 	
-    for(i = 0;  i  < data_set_config_insert_thread_num ; i++)
+	g_thrd_id = 0;
+	test_insert_thread(0);
+	sleep(10);    
+for(i = 1;  i  < data_set_config_insert_thread_num ; i++)
     {
         err = pthread_create(&ntid, NULL, test_insert_thread, (void *)i);
         if (err != 0)
@@ -397,9 +400,12 @@ void* test_insert_thread(void *arg)
 	}
 	
 	test_insert_proc(i);
-	while(1)
-	{
-		sleep(1);
+	if(i != 0)
+	{	
+		while(1)
+		{
+			sleep(10);		
+}
 	}
 }
 

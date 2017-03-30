@@ -17,7 +17,7 @@
 #include "vector.h"
 #include "chunk.h"
 
-#define DEFAULT_INS_LEN  1024
+#define DEFAULT_INS_LEN  4096
 #define DEFAULT_INS_NUM  2048
 #define DEFAULT_RANDOM_WAY 1
 #define DEFAULT_FILE_LEN 1024*1024
@@ -35,8 +35,8 @@ long data_set_config_map_address = 0;
 long long data_set_config_map_read_start = -1;
 long long data_set_config_map_read_len = -1;
 
-int data_set_config_insert_thread_num = 2;
-int data_set_config_delete_thread_num = 2;
+int data_set_config_insert_thread_num = 11;
+int data_set_config_delete_thread_num = 0;
 
 struct data_set_file*  get_data_set_file_list()
 {
@@ -173,7 +173,7 @@ int construct_data_set(struct data_set_file *list)
 	{
 		//printf("cur data set file pointer is %p\r\n",cur);
 		if(access(cur->set_name,F_OK)== 0){
-			printf("data set file exist %s\r\n",cur->set_name);
+		//	printf("data set file exist %s\r\n",cur->set_name);
 			if(data_set_config_random != DEFAULT_RANDOM_WAY)
 			{
 				cur->set_file_status = FILE_STATUS_DATA;
@@ -552,7 +552,7 @@ void test_delete_proc(void *args)
 try_again:
 			if((ret = test_delete_data(data)) < 0)
             {
-                if(-1 == ret)
+                if(-10000 == ret)
 				{
 					atomic64_add(1,(atomic64_t*)&spt_no_found_num);
 				}

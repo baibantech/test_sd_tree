@@ -3241,7 +3241,7 @@ int do_delete_data(cluster_head_t *pclst,
     qinfo.signpost = 0;
     qinfo.pstart_vec = pvec_start;
     qinfo.startid = pclst->vec_head;
-    qinfo.endbit = DATA_BIT_MAX;
+    qinfo.endbit = pclst->endbit;
     qinfo.data = pdata;
     qinfo.free_flag = 1;
     qinfo.get_key = pf;
@@ -3440,7 +3440,7 @@ cluster_head_t *spt_cluster_init(u64 startbit,
 {
     cluster_head_t *pclst, *plower_clst;
     spt_dh_ext *pdh_ext;
-    pclst = cluster_init(0, startbit, 4, thread_num, pf, pf2, free_data, 
+    pclst = cluster_init(0, startbit, 1000, thread_num, pf, pf2, free_data, 
                             spt_upper_construct_data);
     if(pclst == NULL)
         return NULL;
@@ -3461,7 +3461,7 @@ cluster_head_t *spt_cluster_init(u64 startbit,
     }
     pdh_ext->data = (char *)(pdh_ext+1);
     pdh_ext->plower_clst = plower_clst;
-    memset(pdh_ext->data, 0xff, 2);
+    memset(pdh_ext->data, 0xff, DATA_SIZE);
 
     do_insert_data(pclst, (char *)pdh_ext, pclst->get_key_in_tree, pclst->get_key_in_tree_end);
     return pclst;

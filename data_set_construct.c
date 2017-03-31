@@ -18,25 +18,25 @@
 #include "chunk.h"
 
 #define DEFAULT_INS_LEN  4096
-#define DEFAULT_INS_NUM  2048
+#define DEFAULT_INS_NUM  10000000
 #define DEFAULT_RANDOM_WAY 1
-#define DEFAULT_FILE_LEN 1024*1024
+#define DEFAULT_FILE_LEN 400*1024*1024
 unsigned long long spt_no_found_num = 0;
 unsigned long long spt_merge_num = 0;
 long long  data_set_config_instance_len = DEFAULT_INS_LEN;
 long long  data_set_config_instance_num = DEFAULT_INS_NUM;
 
-long long  data_set_config_random = DEFAULT_RANDOM_WAY;
+long long  data_set_config_random = 0;
 long long  data_set_config_file_len = DEFAULT_FILE_LEN;
 
-long long  data_set_config_cache_unit_len = 1024*1024;
+long long  data_set_config_cache_unit_len = 40*1024*1024;
 
 long data_set_config_map_address = 0;
 long long data_set_config_map_read_start = -1;
 long long data_set_config_map_read_len = -1;
 
-int data_set_config_insert_thread_num = 2;
-int data_set_config_delete_thread_num = 2;
+int data_set_config_insert_thread_num = 1;
+int data_set_config_delete_thread_num = 0;
 
 struct data_set_file*  get_data_set_file_list()
 {

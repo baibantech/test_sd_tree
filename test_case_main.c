@@ -313,7 +313,7 @@ int main(int argc,char *argv[])
 	set_data_size(data_set_config_instance_len);
 	
 	//init cluster head
-	thread_num = data_set_config_insert_thread_num + data_set_config_delete_thread_num ;	
+	thread_num = data_set_config_insert_thread_num + data_set_config_delete_thread_num + 1;	
     printf("thread_num is %d\r\n",thread_num);
 	pgclst = spt_cluster_init(0,DATA_BIT_MAX, thread_num, 
                               tree_get_key_from_data,
@@ -332,8 +332,8 @@ int main(int argc,char *argv[])
         spt_debug("spt_thread_init err\r\n");
         return 1;
 	}
-#if 0
-	err = pthread_create(&ntid, NULL, test_divid_thread, (void *)thread_num);
+#if 1
+	err = pthread_create(&ntid, NULL, test_divid_thread, (void *)thread_num-1);
 	if (err != 0)
 		printf("can't create thread: %s\n", strerror(err));
 #endif

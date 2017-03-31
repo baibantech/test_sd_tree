@@ -1734,7 +1734,7 @@ spt_divided_info *spt_divided_info_init(spt_sort_info *psort, int dvd_times,
 
 int divide_sub_cluster(cluster_head_t *pclst, spt_dh_ext *pup)
 {
-    int loop, dataid, ins_dvb_id;
+    int loop, dataid, ins_dvb_id, ret;
     int move_time = 5;
 //    int move_per_cnt = 100;
     spt_sort_info *psort;
@@ -1803,12 +1803,31 @@ int divide_sub_cluster(cluster_head_t *pclst, spt_dh_ext *pup)
         {
             dataid = find_lowest_data(plower_clst, plower_clst->pstart);
             pdh = (spt_dh *)db_id_2_ptr(plower_clst, dataid);
-            do_delete_data_no_free(plower_clst, pdh->pdata, 
-                                   plower_clst->get_key_in_tree,
-                                   plower_clst->get_key_in_tree_end);
-            do_insert_data(pdst_clst, pdh->pdata, 
-                           pdst_clst->get_key_in_tree,
-                           pdst_clst->get_key_in_tree_end);
+            while(1)
+            {
+                ret = do_delete_data_no_free(plower_clst, pdh->pdata, 
+                                             plower_clst->get_key_in_tree,
+                                             plower_clst->get_key_in_tree_end);
+                if(ret == SPT_OK)
+                    break;
+                else if(ret == SPT_WAIT_AMT)
+                {
+                    spt_thread_exit(g_thrd_id);
+                    spt_thread_wait(2, g_thrd_id);
+                    spt_thread_start(g_thrd_id);
+                }
+                else
+                {
+                    spt_debug("divide delete error\r\n");
+                }
+            }
+            ret = do_insert_data(pdst_clst, pdh->pdata, 
+                                 pdst_clst->get_key_in_tree,
+                                 pdst_clst->get_key_in_tree_end);
+            if(ret != SPT_OK)
+            {
+                spt_debug("divide insert error\r\n");
+            }
             if(dataid == ins_dvb_id)
             {
                 break;
@@ -1820,18 +1839,52 @@ int divide_sub_cluster(cluster_head_t *pclst, spt_dh_ext *pup)
             if(dataid == ins_dvb_id)
             {
                 //pdh = (spt_dh *)db_id_2_ptr(plower_clst, dataid);
-                do_delete_data_no_free(plower_clst, pdh->pdata, 
-                                   plower_clst->get_key_in_tree,
-                                   plower_clst->get_key_in_tree_end);
-                do_insert_data(pdst_clst, pdh->pdata, 
+                while(1)
+                {
+                    ret = do_delete_data_no_free(plower_clst, pdh->pdata, 
+                                                 plower_clst->get_key_in_tree,
+                                                 plower_clst->get_key_in_tree_end);
+                    if(ret == SPT_OK)
+                        break;
+                    else if(ret == SPT_WAIT_AMT)
+                    {
+                        spt_thread_exit(g_thrd_id);
+                        spt_thread_wait(2, g_thrd_id);
+                        spt_thread_start(g_thrd_id);
+                    }
+                    else
+                    {
+                        spt_debug("divide delete error\r\n");
+                    }
+                }
+                ret = do_insert_data(pdst_clst, pdh->pdata, 
                            pdst_clst->get_key_in_tree,
                            pdst_clst->get_key_in_tree_end);
+                if(ret != SPT_OK)
+                {
+                    spt_debug("divide insert error\r\n");
+                }
             }
             else
             {
-                do_delete_data(pdst_clst, pdh->pdata, 
-                           pdst_clst->get_key_in_tree,
-                           pdst_clst->get_key_in_tree_end);
+                while(1)
+                {
+                    ret = do_delete_data(pdst_clst, pdh->pdata, 
+                               pdst_clst->get_key_in_tree,
+                               pdst_clst->get_key_in_tree_end);
+                    if(ret == SPT_OK)
+                        break;
+                    else if(ret == SPT_WAIT_AMT)
+                    {
+                        spt_thread_exit(g_thrd_id);
+                        spt_thread_wait(2, g_thrd_id);
+                        spt_thread_start(g_thrd_id);
+                    }
+                    else
+                    {
+                        spt_debug("divide delete error\r\n");
+                    }
+                }
                 break;
             }
         }
@@ -1839,9 +1892,24 @@ int divide_sub_cluster(cluster_head_t *pclst, spt_dh_ext *pup)
         pext_head->plower_clst = pdst_clst;
         if(loop > 0)
         {
-            do_delete_data(pclst, pdinfo->up_vb_arr[loop-1], 
-                           pclst->get_key_in_tree,
-                           pclst->get_key_in_tree_end);
+            while(1)
+            {
+                ret = do_delete_data(pclst, pdinfo->up_vb_arr[loop-1], 
+                                   pclst->get_key_in_tree,
+                                   pclst->get_key_in_tree_end);
+                if(ret == SPT_OK)
+                    break;
+                else if(ret == SPT_WAIT_AMT)
+                {
+                    spt_thread_exit(g_thrd_id);
+                    spt_thread_wait(2, g_thrd_id);
+                    spt_thread_start(g_thrd_id);
+                }
+                else
+                {
+                    spt_debug("divide delete error\r\n");
+                }
+            }
             pdinfo->up_vb_arr[loop-1] = 0;
         }
         spt_thread_exit(g_thrd_id);

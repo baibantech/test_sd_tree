@@ -3429,7 +3429,7 @@ cluster_head_t *spt_first_level_clst_init(u64 start, u64 end, int threadnum)
     do_insert_data(ptopclst, (char *)pdh_ext, spt_upper_get_key);
     return ptopclst;
 }
-#endif
+//#endif
 cluster_head_t *spt_cluster_init(u64 startbit, 
                               u64 endbit, 
                               int thread_num,
@@ -3466,7 +3466,74 @@ cluster_head_t *spt_cluster_init(u64 startbit,
     do_insert_data(pclst, (char *)pdh_ext, pclst->get_key_in_tree, pclst->get_key_in_tree_end);
     return pclst;
 }
+#endif
+cluster_head_t *spt_cluster_init(u64 startbit, 
+                              u64 endbit, 
+                              int thread_num,
+                              spt_cb_get_key pf,
+                              spt_cb_end_key pf2,
+                              spt_cb_free pf_free,
+                              spt_cb_construct pf_con)
+{
+    cluster_head_t *pclst, *plower_clst;
+    spt_dh_ext *pdh_ext;
+    int i;
+    pclst = cluster_init(0, startbit, 1000, thread_num, pf, pf2, free_data, 
+                            spt_upper_construct_data);
+    if(pclst == NULL)
+        return NULL;
 
+    plower_clst = cluster_init(1, startbit, endbit, thread_num, pf, pf2, 
+                                pf_free, pf_con);
+    if(plower_clst == NULL)
+    {
+        cluster_destroy(pclst);
+        return NULL;
+    }
+    
+    pdh_ext = malloc(sizeof(spt_dh_ext)+DATA_SIZE);
+    if(pdh_ext == NULL)
+    {
+        cluster_destroy(pclst);
+        cluster_destroy(plower_clst);
+        return NULL;
+    }
+    pdh_ext->data = (char *)(pdh_ext+1);
+    pdh_ext->plower_clst = plower_clst;
+    memset(pdh_ext->data, 0xff, DATA_SIZE);
+
+    do_insert_data(pclst, (char *)pdh_ext, pclst->get_key_in_tree, pclst->get_key_in_tree_end);
+
+    
+    for(i=0;i<999;i++)
+    {
+        plower_clst = cluster_init(1, startbit, endbit, thread_num, pf, pf2, 
+                                    pf_free, pf_con);
+        if(plower_clst == NULL)
+        {
+            cluster_destroy(pclst);
+            return NULL;
+        }
+        
+        pdh_ext = malloc(sizeof(spt_dh_ext));
+        if(pdh_ext == NULL)
+        {
+            cluster_destroy(pclst);
+            cluster_destroy(plower_clst);
+            return NULL;
+        }
+        pdh_ext->data = (char *)construct_virt_board(DATA_SIZE);
+        if(pdh_ext->data == NULL)
+        {
+            cluster_destroy(pclst);
+            return NULL;
+        }
+        pdh_ext->plower_clst = plower_clst;
+        do_insert_data(pclst, (char *)pdh_ext, pclst->get_key_in_tree, pclst->get_key_in_tree_end);
+    }
+
+    return pclst;
+}
 
 #ifdef _BIG_ENDIAN
 /*    must be byte aligned

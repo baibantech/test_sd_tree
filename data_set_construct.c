@@ -599,6 +599,28 @@ try_again:
 	
 	printf("delete over\r\n");
 }
+
+char *construct_virt_board(int instance_size)
+{
+    int dev_random_id = -1;
+    char *instance_mem = NULL;
+
+    instance_mem = malloc(instance_size);
+    
+	dev_random_id = open("/dev/urandom",'r');
+	if(-1 == dev_random_id){
+		return NULL;
+	}
+    if(-1 == get_random_instance(dev_random_id,instance_mem,instance_size))
+    {
+        close(dev_random_id);
+        free(instance_mem);
+        return NULL;
+    }
+    close(dev_random_id);
+    return instance_mem;
+}
+
 void test_memcmp()
 {
     char *a, *b;

@@ -1957,7 +1957,7 @@ int find_data(cluster_head_t *pclst, query_info_t *pqinfo)
     int va_old, va_new;
     u8 direction;
     int ret = SPT_NOT_FOUND;
-    int retb;
+    int retb, dataid_confirm, cmp_invalid;
     vec_cmpret_t cmpres;
     insert_info_t st_insert_info;
     char *pdata, *prdata;
@@ -2083,6 +2083,11 @@ refind_forward:
                 if(cur_data != SPT_INVALID)
                 {
                     pclst->get_key_in_tree_end(pcur_data);
+                    if(cur_vec.rd != cur_data)
+                    {
+                        cur_data = SPT_INVALID;
+                        goto refind_start;
+                    }
                 }                
                 cur_data = cur_vec.rd;
                 if(cur_data >= 0 && cur_data < SPT_INVALID)
@@ -2169,6 +2174,11 @@ refind_forward:
                             tmp_vec.rd = next_vec.down;
                             if(cur_data != SPT_INVALID)
                             {
+                                //之前的比较无效，删除结点后重查
+                                if(cur_data != next_vec.rd)
+                                {
+                                    cmp_invalid = 1;
+                                }
                                 cur_data = SPT_INVALID;
                                 pclst->get_key_in_tree_end(pcur_data);
                             }
@@ -2194,6 +2204,11 @@ refind_forward:
                             return retb;
                         }
                         ///TODO:取新值后再continue
+                    }
+                    if(cmp_invalid)
+                    {
+                        cmp_invalid = 0;
+                        goto refind_start;
                     }
                     cur_vec.val = pcur->val;
                     if(cur_vec.status == SPT_VEC_INVALID)
@@ -2565,144 +2580,151 @@ refind_forward:
                 continue;
             }
             /*insert up*/
-            else if(cmp > 0)
+            else 
             {
-                switch(op){
-                case SPT_OP_FIND:
-                    if(pqinfo->op == SPT_OP_FIND)
-                    {
-                        pqinfo->db_id = cur_data;
-                        pqinfo->vec_id = cur_vecid;
-                        pqinfo->cmp_result = 1;
-                    }
-                    finish_key_cb(prdata);
-                    if(cur_data != SPT_INVALID)
-                    {
-                        pclst->get_key_in_tree_end(pcur_data);
-                    }
-                    return ret;
-                case SPT_OP_INSERT:
-                    st_insert_info.pkey_vec= pcur;
-                    st_insert_info.key_val= cur_vec.val;
-                    st_insert_info.cmp_pos = cmpres.pos;
-                    st_insert_info.fs = cmpres.smallfs;
-                    st_insert_info.signpost = signpost;
-                    st_insert_info.endbit = startbit+len;
-                    st_insert_info.dataid = cur_data;
-                    //for debug
-                    st_insert_info.pcur_data = pcur_data;
-                    st_insert_info.startbit = startbit;
-                    st_insert_info.cmpres = cmpres;
-                    ret = do_insert_up_via_r(pclst, &st_insert_info, pdata);
-                    if(ret == SPT_DO_AGAIN)
-                    {
-                        goto refind_start;
-                    }
-                    else if(ret >= 0)
-                    {
-                        pqinfo->db_id = ret;
-                        pqinfo->data = 0;
-                        finish_key_cb(prdata);
-                        if(cur_data != SPT_INVALID)
+                if(cur_data != get_data_id(pclst, pcur))
+                    goto refind_start;
+                if(cmp > 0)
+                {
+                    switch(op){
+                    case SPT_OP_FIND:
+                        if(pqinfo->op == SPT_OP_FIND)
                         {
-                            pclst->get_key_in_tree_end(pcur_data);
+                            pqinfo->db_id = cur_data;
+                            pqinfo->vec_id = cur_vecid;
+                            pqinfo->cmp_result = 1;
                         }
-                        return SPT_OK;
-                    }
-                    else
-                    {
                         finish_key_cb(prdata);
                         if(cur_data != SPT_INVALID)
                         {
                             pclst->get_key_in_tree_end(pcur_data);
                         }
                         return ret;
+                    case SPT_OP_INSERT:
+                        st_insert_info.pkey_vec= pcur;
+                        st_insert_info.key_val= cur_vec.val;
+                        st_insert_info.cmp_pos = cmpres.pos;
+                        st_insert_info.fs = cmpres.smallfs;
+                        st_insert_info.signpost = signpost;
+                        st_insert_info.endbit = startbit+len;
+                        st_insert_info.dataid = cur_data;
+                        //for debug
+                        st_insert_info.pcur_data = pcur_data;
+                        st_insert_info.startbit = startbit;
+                        st_insert_info.cmpres = cmpres;
+                        ret = do_insert_up_via_r(pclst, &st_insert_info, pdata);
+                        if(ret == SPT_DO_AGAIN)
+                        {
+                            goto refind_start;
+                        }
+                        else if(ret >= 0)
+                        {
+                            pqinfo->db_id = ret;
+                            pqinfo->data = 0;
+                            finish_key_cb(prdata);
+                            if(cur_data != SPT_INVALID)
+                            {
+                                pclst->get_key_in_tree_end(pcur_data);
+                            }
+                            return SPT_OK;
+                        }
+                        else
+                        {
+                            finish_key_cb(prdata);
+                            if(cur_data != SPT_INVALID)
+                            {
+                                pclst->get_key_in_tree_end(pcur_data);
+                            }
+                            return ret;
+                        }
+                        break;
+                    case SPT_OP_DELETE:
+                        finish_key_cb(prdata);
+                        if(cur_data != SPT_INVALID)
+                        {
+                            pclst->get_key_in_tree_end(pcur_data);
+                        }
+                        return ret;
+                    default:
+                        break;
                     }
-                    break;
-                case SPT_OP_DELETE:
-                    finish_key_cb(prdata);
-                    if(cur_data != SPT_INVALID)
-                    {
-                        pclst->get_key_in_tree_end(pcur_data);
+                }
+                /*insert down*/
+                else
+                {
+                    switch(op){
+                    case SPT_OP_FIND:
+                        if(pqinfo->op == SPT_OP_FIND)
+                        {
+                            pqinfo->db_id = cur_data;
+                            pqinfo->vec_id = cur_vecid;
+                            pqinfo->cmp_result = -1;
+                        }
+                        finish_key_cb(prdata);
+                        if(cur_data != SPT_INVALID)
+                        {
+                            pclst->get_key_in_tree_end(pcur_data);
+                        }
+                        return ret;
+                    case SPT_OP_INSERT:
+                        startbit +=len;
+                        if(cmpres.smallfs == startbit && startbit<endbit)
+                        {
+                            st_insert_info.fs = find_fs(prdata, startbit, endbit-startbit);
+                        }
+                        else
+                        {
+                            st_insert_info.fs = cmpres.smallfs;
+                        }
+                        st_insert_info.pkey_vec= pcur;
+                        st_insert_info.key_val= cur_vec.val;
+                        st_insert_info.cmp_pos = cmpres.pos;
+                        st_insert_info.signpost = signpost;
+                        ret = do_insert_down_via_r(pclst, &st_insert_info, pdata);
+                        if(ret == SPT_DO_AGAIN)
+                        {
+                            goto refind_start;
+                        }
+                        else if(ret >= 0)
+                        {
+                            pqinfo->db_id = ret;
+                            pqinfo->data = 0;
+                            finish_key_cb(prdata);
+                            if(cur_data != SPT_INVALID)
+                            {
+                                pclst->get_key_in_tree_end(pcur_data);
+                            }
+                            return SPT_OK;
+                        }
+                        else
+                        {
+                            finish_key_cb(prdata);
+                            if(cur_data != SPT_INVALID)
+                            {
+                                pclst->get_key_in_tree_end(pcur_data);
+                            }
+                            return ret;
+                        }
+                        break;
+                    case SPT_OP_DELETE:
+                        finish_key_cb(prdata);
+                        if(cur_data != SPT_INVALID)
+                        {
+                            pclst->get_key_in_tree_end(pcur_data);
+                        }
+                        return ret;
+                    default:
+                        break;
                     }
-                    return ret;
-                default:
-                    break;
                 }
             }
-            /*insert down*/
-            else
-            {
-                switch(op){
-                case SPT_OP_FIND:
-                    if(pqinfo->op == SPT_OP_FIND)
-                    {
-                        pqinfo->db_id = cur_data;
-                        pqinfo->vec_id = cur_vecid;
-                        pqinfo->cmp_result = -1;
-                    }
-                    finish_key_cb(prdata);
-                    if(cur_data != SPT_INVALID)
-                    {
-                        pclst->get_key_in_tree_end(pcur_data);
-                    }
-                    return ret;
-                case SPT_OP_INSERT:
-                    startbit +=len;
-                    if(cmpres.smallfs == startbit && startbit<endbit)
-                    {
-                        st_insert_info.fs = find_fs(prdata, startbit, endbit-startbit);
-                    }
-                    else
-                    {
-                        st_insert_info.fs = cmpres.smallfs;
-                    }
-                    st_insert_info.pkey_vec= pcur;
-                    st_insert_info.key_val= cur_vec.val;
-                    st_insert_info.cmp_pos = cmpres.pos;
-                    st_insert_info.signpost = signpost;
-                    ret = do_insert_down_via_r(pclst, &st_insert_info, pdata);
-                    if(ret == SPT_DO_AGAIN)
-                    {
-                        goto refind_start;
-                    }
-                    else if(ret >= 0)
-                    {
-                        pqinfo->db_id = ret;
-                        pqinfo->data = 0;
-                        finish_key_cb(prdata);
-                        if(cur_data != SPT_INVALID)
-                        {
-                            pclst->get_key_in_tree_end(pcur_data);
-                        }
-                        return SPT_OK;
-                    }
-                    else
-                    {
-                        finish_key_cb(prdata);
-                        if(cur_data != SPT_INVALID)
-                        {
-                            pclst->get_key_in_tree_end(pcur_data);
-                        }
-                        return ret;
-                    }
-                    break;
-                case SPT_OP_DELETE:
-                    finish_key_cb(prdata);
-                    if(cur_data != SPT_INVALID)
-                    {
-                        pclst->get_key_in_tree_end(pcur_data);
-                    }
-                    return ret;
-                default:
-                    break;
-                }
-            }        
         }
         else
         {
             if(cur_data != SPT_INVALID)
             {
+                if(cur_data != get_data_id(pclst, pcur))
+                    goto refind_start;
                 cur_data = SPT_INVALID;
                 pclst->get_key_in_tree_end(pcur_data);
             }

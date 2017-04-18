@@ -8,13 +8,21 @@
 #include<stdio.h>
 #include "vector.h"
 #include "chunk.h"
+#include "atomic_user.h"
+
+u64 g_get_key = 0;
+u64 g_free_key = 0;
 
 char *tree_get_key_from_data(char *pdata)
 {
+    atomic64_add(1, (atomic64_t *)&g_get_key);
+
 	return pdata;
 }
 void tree_free_key(char *key)
 {
+    atomic64_add(1, (atomic64_t *)&g_free_key);
+
 	return;
 }
 void tree_free_data(char *p)

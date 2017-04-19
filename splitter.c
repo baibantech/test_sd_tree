@@ -5319,6 +5319,29 @@ void debug_cluster_travl(cluster_head_t *pclst)
     return;
 }
 
+u32 debug_thrd_vec_statistic(cluster_head_t *pclst)
+{
+    int i;
+    u32 total=0;
+    for(i=0;i<pclst->thrd_total;i++)
+    {
+        total+=pclst->thrd_data[i].vec_cnt;
+    }
+    return total;
+}
+
+u32 debug_thrd_data_statistic(cluster_head_t *pclst)
+{
+    int i;
+    u32 total=0;
+    for(i=0;i<pclst->thrd_total;i++)
+    {
+        total+=pclst->thrd_data[i].data_cnt;
+    }
+    return total;
+}
+
+
 int debug_statistic(cluster_head_t *pclst)
 {
     spt_stack stack = {0};
@@ -5331,11 +5354,13 @@ int debug_statistic(cluster_head_t *pclst)
     char *pcur_data = NULL;
     u64 signpost;
     travl_info *pnode;
-    u32 ref_total;
+    u32 ref_total, buf_vec_total, buf_data_total;
     u32 lower_ref;
     char *data;
     cluster_head_t *plower_clst;
 
+    buf_vec_total = 0;
+    buf_data_total = 0;
     ref_total = 0;
     lower_ref = 0;
     signpost = 0;
@@ -5422,6 +5447,8 @@ int debug_statistic(cluster_head_t *pclst)
                 if(!pclst->is_bottom)
                 {
                     plower_clst = ((spt_dh_ext *)pcur_data)->plower_clst;
+                    buf_data_total += debug_thrd_data_statistic(plower_clst);
+                    buf_vec_total += debug_thrd_vec_statistic(plower_clst);
                     lower_ref += debug_statistic(plower_clst);
                 }
             }
@@ -5439,6 +5466,8 @@ int debug_statistic(cluster_head_t *pclst)
                     if(!pclst->is_bottom)
                     {
                         spt_debug("\r\n lower_total_ref:%d\r\n", lower_ref);
+                        spt_debug("\r\n buf_data_total:%d\r\n", buf_data_total);
+                        spt_debug("\r\n buf_vec_total:%d\r\n", buf_vec_total);
                     }
                     return ref_total;
                 }
@@ -5478,6 +5507,8 @@ int debug_statistic(cluster_head_t *pclst)
     if(!pclst->is_bottom)
     {
         spt_debug("\r\n lower_total_ref:%d\r\n", lower_ref);
+        spt_debug("\r\n buf_data_total:%d\r\n", buf_data_total);
+        spt_debug("\r\n buf_vec_total:%d\r\n", buf_vec_total);
     }    
     return ref_total;
 }

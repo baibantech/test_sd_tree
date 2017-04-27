@@ -2108,6 +2108,7 @@ refind_forward:
                         ret = do_insert_first_set(pclst, &st_insert_info, pdata);
                         if(ret == SPT_DO_AGAIN)
                         {
+                            cur_data = SPT_INVALID;
                             goto refind_start;
                         }
                         else if(ret >= 0)

@@ -1589,11 +1589,15 @@ spt_sort_info *spt_cluster_sort(cluster_head_t *pclst)
         else
         {            
             cur_data = cur_vec.rd;
-            pdh = (spt_dh *)db_id_2_ptr(pclst, cur_data);
-            psort->array[psort->idx] = pdh->pdata;
-            psort->idx = (psort->idx+1)%psort->size;
-            psort->cnt++;
-            //debug_pdh_data_print(pclst, pdh);
+            if(cur_data != SPT_NULL)
+            {
+                pdh = (spt_dh *)db_id_2_ptr(pclst, cur_data);
+                psort->array[psort->idx] = pdh->pdata;
+                psort->idx = (psort->idx+1)%psort->size;
+                psort->cnt++;
+                //debug_pdh_data_print(pclst, pdh);            
+            }
+
             if(index == 0)
             {
                 break;
@@ -1735,7 +1739,7 @@ spt_divided_info *spt_divided_info_init(spt_sort_info *psort, int dvd_times,
 int divide_sub_cluster(cluster_head_t *pclst, spt_dh_ext *pup)
 {
     int loop, dataid, ins_dvb_id, ret;
-    int move_time = 5;
+    int move_time = SPT_DVD_MOVE_TIMES;
 //    int move_per_cnt = 100;
     spt_sort_info *psort;
     spt_divided_info *pdinfo;
@@ -2556,6 +2560,8 @@ refind_forward:
                 {
                     //SPT_NOMEM or SPT_WAIT_AMT;
                     finish_key_cb(prdata);
+                    if(ret == SPT_OK)
+                        return ret;
                     return cur_data;
                 }
                 
@@ -2763,6 +2769,8 @@ refind_forward:
                                 {
                                     //SPT_NOMEM or SPT_WAIT_AMT;
                                     finish_key_cb(prdata);
+                                    if(ret == SPT_OK)
+                                        return ret;
                                     return cur_data;
                                 }
                             }
@@ -3101,6 +3109,8 @@ refind_forward:
                             {
                                 //SPT_NOMEM or SPT_WAIT_AMT;
                                 finish_key_cb(prdata);
+                                if(ret == SPT_OK)
+                                    return ret;
                                 return cur_data;
                             }
                         }
@@ -3592,7 +3602,7 @@ cluster_head_t *spt_cluster_init(u64 startbit,
 
     do_insert_data(pclst, (char *)pdh_ext, pclst->get_key_in_tree, pclst->get_key_in_tree_end);
 
-    
+#if 0    
     for(i=0;i<999;i++)
     {
         plower_clst = cluster_init(1, startbit, endbit, thread_num, pf, pf2, 
@@ -3619,7 +3629,7 @@ cluster_head_t *spt_cluster_init(u64 startbit,
         pdh_ext->plower_clst = plower_clst;
         do_insert_data(pclst, (char *)pdh_ext, pclst->get_key_in_tree, pclst->get_key_in_tree_end);
     }
-
+#endif
     return pclst;
 }
 

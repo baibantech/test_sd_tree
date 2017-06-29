@@ -16,6 +16,8 @@
 #include "data_cache.h"
 #include "vector.h"
 #include "chunk.h"
+#include "sdtree_perf_stat.h"
+#include "jhash.h"
 
 #define DEFAULT_INS_LEN  4096
 #define DEFAULT_INS_NUM  10000000
@@ -26,7 +28,7 @@ unsigned long long spt_merge_num = 0;
 long long  data_set_config_instance_len = DEFAULT_INS_LEN;
 long long  data_set_config_instance_num = DEFAULT_INS_NUM;
 
-long long  data_set_config_random = 1;
+long long  data_set_config_random = 0;
 long long  data_set_config_file_len = DEFAULT_FILE_LEN;
 
 long long  data_set_config_cache_unit_len = 40*1024*1024;
@@ -35,7 +37,7 @@ long data_set_config_map_address = 0;
 long long data_set_config_map_read_start = -1;
 long long data_set_config_map_read_len = -1;
 
-int data_set_config_insert_thread_num = 2;
+int data_set_config_insert_thread_num = 3;
 int data_set_config_delete_thread_num = 0;
 
 struct data_set_file*  get_data_set_file_list()
@@ -163,7 +165,7 @@ int construct_data_set(struct data_set_file *list)
 		return -1;
 	}
 
-	dev_random_id = open("/dev/urandom",'r');
+	dev_random_id = open("/dev/urandom",O_RDONLY);
 	if(-1 == dev_random_id){
 		return -1;
 	}
@@ -448,7 +450,10 @@ void test_insert_proc(void *args)
 	unsigned long long merge_cnt = 0;
 	unsigned long long per_cache_time_begin = 0;	
 	unsigned long long per_cache_time_end = 0;	
-	unsigned long long total_time = 0;	
+	unsigned long long total_time = 0;
+    u64 *prandom1,*prandom2;
+    u64 start, end;
+    int idx;
 	
 	do {
 		next = get_next_data_set_cache(cur);		
@@ -457,14 +462,39 @@ void test_insert_proc(void *args)
 			break;
 		}
 		insert_cnt =0;
-		per_cache_time_begin = rdtsc();
-		
+//		per_cache_time_begin = rdtsc();
 		spt_thread_start(g_thrd_id);
 		while(data = get_next_data(next))
 		{
 	
 			insert_cnt++;
 //			test_insert_data(data);
+#if 1
+            prandom1 = (u64 *)(data_set_config_map_address + 
+                                (rand()%data_set_config_instance_num)*data_set_config_instance_len);
+            prandom2 = (u64 *)(data_set_config_map_address + 
+                                (rand()%data_set_config_instance_num)*data_set_config_instance_len);
+            {
+                PERF_STAT_START(random_cmp);
+                for(idx=0;idx<512;idx++)
+                {
+                    if(*prandom1 != *prandom2)
+                    {
+                        spt_no_found_num++;
+                    }
+                    prandom1++;
+                    prandom2++;
+                }
+                PERF_STAT_END(random_cmp);
+            }
+            
+            prandom1 = (u64 *)(data_set_config_map_address + 
+                                (rand()%data_set_config_instance_num)*data_set_config_instance_len);
+
+            PERF_STAT_START(jhash2_random);
+            spt_no_found_num = jhash2((const unsigned int *)prandom1,4096/4, 17);
+            PERF_STAT_END(jhash2_random);
+#endif            
 #if 1			
             if(insert_cnt%100 == 0)
             {
@@ -472,6 +502,8 @@ void test_insert_proc(void *args)
                 spt_thread_start(g_thrd_id);
             }
 try_again:
+            
+            PERF_STAT_START(whole_insert);            
 			if(NULL ==(ret_data =  test_insert_data(data)))
             {
                 ret = spt_get_errno();
@@ -500,6 +532,20 @@ try_again:
 			}
 		else
 		{
+#if 0		
+		    end = rdtsc();
+            idx = pstat[g_thrd_id]->insert.idx%8192;
+            pstat[g_thrd_id]->insert.perf[idx] = end-start;
+            pstat[g_thrd_id]->insert.total += end-start;
+            pstat[g_thrd_id]->insert.idx++;
+            if(idx == 8191)
+            {
+                printf("\r\n insert average cycle:%lld\r\n",
+                            pstat[g_thrd_id]->insert.total/8192);
+                pstat[g_thrd_id]->insert.total = 0;
+            }
+#endif      
+            PERF_STAT_END(whole_insert);
 			if(ret_data != data)
 			{
 				//printf("ret_data is %p,data is %p\r\n",ret_data,data);
@@ -509,10 +555,14 @@ try_again:
 #endif
 		}
 		spt_thread_exit(g_thrd_id);
+#if 0        
 		per_cache_time_end = rdtsc();
 		total_time = per_cache_time_end - per_cache_time_begin;
 		printf("thread id %d ,per cache insert cost: %lld,insert_cnt is %d,merge_cnt is %lld,average cost is %d\r\n",g_thrd_id, total_time,insert_cnt,merge_cnt,total_time/insert_cnt);
-		if(cur)
+#endif
+        show_sd_perf_stat_thread(g_thrd_id);
+
+        if(cur)
 		{
 			free(cur);
 		}
@@ -607,7 +657,7 @@ char *construct_virt_board(int instance_size)
 
     instance_mem = malloc(instance_size);
     
-	dev_random_id = open("/dev/urandom",'r');
+	dev_random_id = open("/dev/urandom",O_RDONLY);
 	if(-1 == dev_random_id){
 		return NULL;
 	}
@@ -620,6 +670,21 @@ char *construct_virt_board(int instance_size)
     close(dev_random_id);
     return instance_mem;
 }
+
+int my_cmp(char *a, char *b, u64 len)
+{
+    spt_no_found_num = 1;
+    return memcmp(a,b,len); 
+}
+
+int k_memcmp(const void *s1, const void *s2, size_t len)
+{
+	u8 diff;
+	asm("repe; cmpsb; setnz %0"
+	    : "=qm" (diff), "+D" (s1), "+S" (s2), "+c" (len));
+	return diff;
+}
+
 
 void test_memcmp()
 {
@@ -659,9 +724,16 @@ void test_memcmp()
     printf("my memcmp cost: %lld\r\n", per_cache_time_end - per_cache_time_begin);
     
     per_cache_time_begin = rdtsc();
-    memcmp(a, b, 4096);
+    if(memcmp(a, b, 4096) != 0)
+        spt_no_found_num = 1;
     per_cache_time_end = rdtsc();
     printf("memcmp cost: %lld\r\n", per_cache_time_end - per_cache_time_begin);
+
+    per_cache_time_begin = rdtsc();
+    if(k_memcmp(a, b, 4096)!=0)
+        spt_no_found_num = 0;
+    per_cache_time_end = rdtsc();
+    printf("k_memcmp cost: %lld\r\n", per_cache_time_end - per_cache_time_begin);
 
 
     per_cache_time_begin = rdtsc();

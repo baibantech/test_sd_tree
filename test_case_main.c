@@ -267,7 +267,7 @@ error_cmd:
 }
 
 struct data_set_file *set_file_list = NULL;
-int main1(int argc,char *argv[])
+int main(int argc,char *argv[])
 {
 	int ret = -1;
 	void *addr = NULL;
@@ -317,6 +317,9 @@ int main1(int argc,char *argv[])
 	//init cluster head
 	thread_num = data_set_config_insert_thread_num + data_set_config_delete_thread_num + 1;	
     printf("thread_num is %d\r\n",thread_num);
+
+    sd_perf_stat_init();
+
 	pgclst = spt_cluster_init(0,DATA_BIT_MAX, thread_num, 
                               tree_get_key_from_data,
                               tree_free_key,
@@ -334,7 +337,7 @@ int main1(int argc,char *argv[])
         spt_debug("spt_thread_init err\r\n");
         return 1;
 	}
-#if 1
+#if 0
 	err = pthread_create(&ntid, NULL, test_divid_thread, (void *)thread_num-1);
 	if (err != 0)
 		printf("can't create thread: %s\n", strerror(err));
@@ -388,7 +391,7 @@ int test_delete_data(char *pdata)
 extern cluster_head_t *pbclst;
 extern int dbg_switch;
 int opnum = 0;
-int main()
+int main1()
 {
     FILE *f_data, *f_op;
     char *pdata, op, *ret_data;

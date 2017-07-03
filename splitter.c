@@ -317,7 +317,334 @@ char *get_real_data(cluster_head_t *pclst, char *pdata)
     ext_head = (spt_dh_ext *)pdata;
     return ext_head->data;
 }
+#if 1
+int get_data_id(cluster_head_t *pclst, spt_vec* pvec)
+{
+    spt_vec *pcur, *pnext, *ppre;
+    spt_vec tmp_vec, cur_vec, next_vec;
+    //u8 direction;
+    u32 vecid;
+    int ret;
 
+    PERF_STAT_START(get_data_id);
+get_id_start:
+    ppre = 0;
+    cur_vec.val = pvec->val;
+    pcur = pvec;
+    if(cur_vec.status == SPT_VEC_RAW)
+    {
+        smp_mb();
+        cur_vec.val = pvec->val;
+        if(cur_vec.status == SPT_VEC_RAW)
+        {
+            return SPT_DO_AGAIN;
+        }
+    }
+    if(cur_vec.status == SPT_VEC_INVALID)
+    {
+        return SPT_DO_AGAIN;
+    }
+
+    while(1)
+    {
+        if(cur_vec.type == SPT_VEC_RIGHT)
+        {
+            pnext = (spt_vec *)vec_id_2_ptr(pclst,cur_vec.rd);
+            next_vec.val = pnext->val;
+            if(next_vec.status != SPT_VEC_RAW 
+                && next_vec.status != SPT_VEC_INVALID
+                && next_vec.type != SPT_VEC_SIGNPOST
+                && next_vec.down != SPT_NULL)
+            {
+                ppre = pcur;
+                pcur = pnext;
+                cur_vec.val = next_vec.val;
+                continue;
+            }
+            if(next_vec.status == SPT_VEC_RAW)
+            {
+                smp_mb();
+                next_vec.val = pnext->val;
+                if(next_vec.status == SPT_VEC_RAW)
+                {
+                    goto get_id_start;
+                }
+            }           
+            if(next_vec.status == SPT_VEC_INVALID)
+            {
+                tmp_vec.val = cur_vec.val;
+                vecid = cur_vec.rd;
+                tmp_vec.rd = next_vec.rd;
+                if(next_vec.type == SPT_VEC_SIGNPOST)
+                {
+                    tmp_vec.type = next_vec.ext_sys_flg;
+                }
+                else if(next_vec.type == SPT_VEC_DATA)
+                {
+                    if(next_vec.down == SPT_NULL)
+                    {
+                        spt_set_data_flag(tmp_vec);
+                    }
+                    else
+                    {
+                        tmp_vec.rd = next_vec.down;
+                    }                
+                }
+                else
+                {
+                    ;
+                }
+                //cur_vec.val = atomic64_cmpxchg((atomic64_t *)pcur, cur_vec.val, tmp_vec.val);
+                //if(cur_vec.val == tmp_vec.val)//delete succ
+                if(cur_vec.val == atomic64_cmpxchg((atomic64_t *)pcur, cur_vec.val, tmp_vec.val))
+                {
+                    ret = vec_free_to_buf(pclst, vecid, g_thrd_id);
+                    if(ret != SPT_OK)
+                        return ret;
+                    continue;
+                }
+                else//delete fail
+                {
+                    cur_vec.val = pcur->val;
+                    if(cur_vec.status == SPT_VEC_INVALID)
+                    {
+                        if(ppre == NULL)
+                            goto get_id_start;
+                        else
+                        {
+                            cur_vec.val = ppre->val;
+                            if(cur_vec.status == SPT_VEC_INVALID)
+                                goto get_id_start;
+                            else
+                            {
+                                pcur = ppre;
+                                ppre = NULL;
+                                continue;
+                            }
+                        }
+                    }
+                    continue;
+                }
+            }
+            
+            //对于一个向量的右结点:
+                //如果是路标，不能是SPT_VEC_SYS_FLAG_DATA
+                //如果是向量，必然有down
+            if(next_vec.type == SPT_VEC_SIGNPOST)
+            {
+                if(next_vec.ext_sys_flg == SPT_VEC_SYS_FLAG_DATA)
+                {
+                    tmp_vec.val = next_vec.val;
+                    tmp_vec.status = SPT_VEC_INVALID;
+                    atomic64_cmpxchg((atomic64_t *)pnext, next_vec.val, tmp_vec.val);
+                    //set invalid succ or not, refind from cur
+                    cur_vec.val = pcur->val;
+                    if((cur_vec.status == SPT_VEC_INVALID))
+                    {
+                        if(ppre == NULL)
+                            goto get_id_start;
+                        else
+                        {
+                            cur_vec.val = ppre->val;
+                            if(cur_vec.status == SPT_VEC_INVALID)
+                                goto get_id_start;
+                            else
+                            {
+                                pcur = ppre;
+                                ppre = NULL;
+                                continue;
+                            }
+                        }
+                    }
+                    continue;
+                }
+            }
+            else
+            {
+                if(next_vec.down == SPT_NULL)
+                {
+                    tmp_vec.val = next_vec.val;
+                    tmp_vec.status = SPT_VEC_INVALID;
+                    atomic64_cmpxchg((atomic64_t *)pnext, next_vec.val, tmp_vec.val);
+                    //set invalid succ or not, refind from cur
+                    cur_vec.val = pcur->val;
+                    if((cur_vec.status == SPT_VEC_INVALID))
+                    {
+                        if(ppre == NULL)
+                            goto get_id_start;
+                        else
+                        {
+                            cur_vec.val = ppre->val;
+                            if(cur_vec.status == SPT_VEC_INVALID)
+                                goto get_id_start;
+                            else
+                            {
+                                pcur = ppre;
+                                ppre = NULL;
+                                continue;
+                            }
+                        }
+                    }
+                    continue;
+                }
+            }
+        }
+        else if(cur_vec.type == SPT_VEC_DATA)
+        {
+            PERF_STAT_END(get_data_id);
+            return cur_vec.rd;
+        }
+        //cur是路标，方向肯定是right,遍历过程中不会对方向是down的路标调用此接口
+        else
+        {
+            if(cur_vec.ext_sys_flg == SPT_VEC_SYS_FLAG_DATA)
+            {
+                tmp_vec.val = cur_vec.val;
+                tmp_vec.status = SPT_VEC_INVALID;
+                cur_vec.val = atomic64_cmpxchg((atomic64_t *)pcur, cur_vec.val, tmp_vec.val);
+                /*set invalid succ or not, refind from ppre*/;
+                if(ppre == NULL)
+                    goto get_id_start;
+                else
+                {
+                    cur_vec.val = ppre->val;
+                    if(cur_vec.status == SPT_VEC_INVALID)
+                        goto get_id_start;
+                    else
+                    {
+                        pcur = ppre;
+                        ppre = NULL;
+                        continue;
+                    }
+                }
+            }
+            pnext = (spt_vec *)vec_id_2_ptr(pclst,cur_vec.rd);
+            next_vec.val = pnext->val;
+            if(next_vec.status == SPT_VEC_RAW)
+            {
+                smp_mb();
+                next_vec.val = pnext->val;
+                if(next_vec.status == SPT_VEC_RAW)
+                {
+                    goto get_id_start;
+                }
+            }
+            if(next_vec.status == SPT_VEC_INVALID)
+            {
+                tmp_vec.val = cur_vec.val;
+                vecid = cur_vec.rd;
+                tmp_vec.rd = next_vec.rd;
+                if(next_vec.type == SPT_VEC_SIGNPOST)
+                {
+                    tmp_vec.ext_sys_flg = next_vec.ext_sys_flg;
+                }
+                else if(next_vec.type == SPT_VEC_DATA)
+                {
+                    if(next_vec.down == SPT_NULL)
+                    {
+                        tmp_vec.ext_sys_flg = SPT_VEC_SYS_FLAG_DATA;
+                    }
+                    else
+                    {
+                        tmp_vec.rd = next_vec.down;
+                    }                
+                }
+                else
+                {
+                    ;
+                }
+                //cur_vec.val = atomic64_cmpxchg((atomic64_t *)pcur, cur_vec.val, tmp_vec.val);
+                //if(cur_vec.val == tmp_vec.val)//delete succ
+                if(cur_vec.val == atomic64_cmpxchg((atomic64_t *)pcur, cur_vec.val, tmp_vec.val))//delete succ
+                {
+                    ret = vec_free_to_buf(pclst, vecid, g_thrd_id);
+                    if(ret != SPT_OK)
+                        return ret;
+                    continue;
+                }
+                else//delete fail
+                {
+                    cur_vec.val = pcur->val;
+                    if(cur_vec.status == SPT_VEC_INVALID)
+                    {
+                        if(ppre == NULL)
+                            goto get_id_start;
+                        else
+                        {
+                            cur_vec.val = ppre->val;
+                            if(cur_vec.status == SPT_VEC_INVALID)
+                                goto get_id_start;
+                            else
+                            {
+                                pcur = ppre;
+                                ppre = NULL;
+                                continue;
+                            }
+                        }
+                    }
+                    continue;
+                }                    
+            }
+            //对于一个路标结点:
+                //next为路标，是不合理结构。
+            if(next_vec.type == SPT_VEC_SIGNPOST)
+            {
+                tmp_vec.val = cur_vec.val;
+                tmp_vec.status = SPT_VEC_INVALID;
+                cur_vec.val = atomic64_cmpxchg((atomic64_t *)pcur, cur_vec.val, tmp_vec.val);
+                /*set invalid succ or not, refind from ppre*/
+                if(ppre == NULL)
+                    goto get_id_start;
+                else
+                {
+                    cur_vec.val = ppre->val;
+                    if(cur_vec.status == SPT_VEC_INVALID)
+                        goto get_id_start;
+                    else
+                    {
+                        pcur = ppre;
+                        ppre = NULL;
+                        continue;
+                    }
+                }
+            }
+            else
+            {
+                if(next_vec.down == SPT_NULL)
+                {
+                    tmp_vec.val = next_vec.val;
+                    tmp_vec.status = SPT_VEC_INVALID;
+                    atomic64_cmpxchg((atomic64_t *)pnext, next_vec.val, tmp_vec.val);
+                    //set invalid succ or not, refind from cur
+                    cur_vec.val = pcur->val;
+                    if((cur_vec.status == SPT_VEC_INVALID))
+                    {
+                        if(ppre == NULL)
+                            goto get_id_start;
+                        else
+                        {
+                            cur_vec.val = ppre->val;
+                            if(cur_vec.status == SPT_VEC_INVALID)
+                                goto get_id_start;
+                            else
+                            {
+                                pcur = ppre;
+                                ppre = NULL;
+                                continue;
+                            }
+                        }
+                    }
+                    continue;
+                }
+            }            
+        }
+        ppre = pcur;
+        pcur = pnext;
+        cur_vec.val = next_vec.val;
+    }
+
+}
+#else
 int get_data_id(cluster_head_t *pclst, spt_vec* pvec)
 {
     spt_vec *pcur, *pnext, *ppre;
@@ -634,7 +961,7 @@ get_id_start:
     }
 
 }
-
+#endif
 int do_insert_dsignpost_right(cluster_head_t *pclst, insert_info_t *pinsert, char *new_data)
 {
     spt_vec tmp_vec, *pvec_a;  

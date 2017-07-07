@@ -532,6 +532,7 @@ unsigned int db_alloc(cluster_head_t *pclst, spt_dh **db)
     *db = (spt_dh *)pdb;
     (*db)->rsv = 0;
     (*db)->pdata = NULL;
+//    (*db)->cur_id = SPT_NULL;
     return db_id;
 }
 
@@ -641,6 +642,7 @@ unsigned int db_alloc_from_buf(cluster_head_t *pclst, int thread_id, spt_dh **db
         }
     }
     (*db)->rsv = 0;
+//    (*db)->cur_id = SPT_NULL;
     pnode->id = SPT_NULL;
     if(pthrd_data->data_alloc_out == pthrd_data->data_free_in)
     {
@@ -1212,6 +1214,30 @@ void test_vec_alloc_n_times(cluster_head_t *pclst)
     }
     printf(" ==============done!\r\n");
     return;
+}
+int test_find_data_from_data_buf(cluster_head_t *pclst, int thread_id, int db_id)
+{
+    spt_thrd_data *pthrd_data = &pclst->thrd_data[thread_id];
+    u32 list_vec_id, ret_id;
+    unsigned int tick;
+    spt_buf_list *pnode;
+
+    pnode = 0;
+    list_vec_id = pthrd_data->data_alloc_out;
+
+    if(list_vec_id == SPT_NULL)
+    {
+        return -1;
+    }
+    while(list_vec_id != SPT_NULL)
+    {
+        pnode = (spt_buf_list *)vec_id_2_ptr(pclst,list_vec_id);
+        if(pnode->id == db_id)
+            printf("\r\npnode:%p\r\n", pnode);
+        list_vec_id = pnode->next;
+    }
+    return 0;
+
 }
 
 #if 0

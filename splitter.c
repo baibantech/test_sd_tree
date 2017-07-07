@@ -351,8 +351,7 @@ get_id_start:
         {
             pnext = (spt_vec *)vec_id_2_ptr(pclst,cur_vec.rd);
             next_vec.val = pnext->val;
-            if(next_vec.status != SPT_VEC_RAW 
-                && next_vec.status != SPT_VEC_INVALID
+            if(next_vec.status == SPT_VEC_VALID
                 && next_vec.type != SPT_VEC_SIGNPOST
                 && next_vec.down != SPT_NULL)
             {
@@ -384,6 +383,8 @@ get_id_start:
                     if(next_vec.down == SPT_NULL)
                     {
                         spt_set_data_flag(tmp_vec);
+                        if(next_vec.rd == SPT_NULL && pcur!=pclst->pstart)
+                            tmp_vec.status = SPT_VEC_INVALID;
                     }
                     else
                     {
@@ -401,30 +402,31 @@ get_id_start:
                     ret = vec_free_to_buf(pclst, vecid, g_thrd_id);
                     if(ret != SPT_OK)
                         return ret;
-                    continue;
                 }
-                else//delete fail
+                cur_vec.val = pcur->val;
+                if(cur_vec.status != SPT_VEC_VALID)
                 {
-                    cur_vec.val = pcur->val;
-                    if(cur_vec.status == SPT_VEC_INVALID)
+                #if 0
+                    if(ppre == NULL)
+                        goto get_id_start;
+                    else
                     {
-                        if(ppre == NULL)
+                        cur_vec.val = ppre->val;
+                        if(cur_vec.status == SPT_VEC_VALID)
                             goto get_id_start;
                         else
                         {
-                            cur_vec.val = ppre->val;
-                            if(cur_vec.status == SPT_VEC_INVALID)
-                                goto get_id_start;
-                            else
-                            {
-                                pcur = ppre;
-                                ppre = NULL;
-                                continue;
-                            }
+                            pcur = ppre;
+                            ppre = NULL;
+                            continue;
                         }
                     }
+
                     continue;
+                #endif
+                    goto get_id_start;
                 }
+                continue;
             }
             
             //对于一个向量的右结点:
@@ -468,14 +470,15 @@ get_id_start:
                     atomic64_cmpxchg((atomic64_t *)pnext, next_vec.val, tmp_vec.val);
                     //set invalid succ or not, refind from cur
                     cur_vec.val = pcur->val;
-                    if((cur_vec.status == SPT_VEC_INVALID))
+                    if((cur_vec.status != SPT_VEC_VALID))
                     {
+                    #if 0
                         if(ppre == NULL)
                             goto get_id_start;
                         else
                         {
                             cur_vec.val = ppre->val;
-                            if(cur_vec.status == SPT_VEC_INVALID)
+                            if(cur_vec.status != SPT_VEC_VALID)
                                 goto get_id_start;
                             else
                             {
@@ -484,6 +487,8 @@ get_id_start:
                                 continue;
                             }
                         }
+                    #endif
+                        goto get_id_start;
                     }
                     continue;
                 }
@@ -676,6 +681,8 @@ get_id_start:
     {
         if(cur_vec.type == SPT_VEC_DATA)
         {
+            if(cur_vec.rd == SPT_NULL)
+                assert(pcur == pclst->pstart);
             PERF_STAT_END(get_data_id);
             return cur_vec.rd;
         }
@@ -706,6 +713,8 @@ get_id_start:
                     if(next_vec.down == SPT_NULL)
                     {
                         spt_set_data_flag(tmp_vec);
+                        if(next_vec.rd == SPT_NULL)
+                            tmp_vec.status == SPT_VEC_INVALID;
                     }
                     else
                     {
@@ -723,30 +732,27 @@ get_id_start:
                     ret = vec_free_to_buf(pclst, vecid, g_thrd_id);
                     if(ret != SPT_OK)
                         return ret;
-                    continue;
                 }
-                else//delete fail
+
+                cur_vec.val = pcur->val;
+                if(cur_vec.status != SPT_VEC_VALID)
                 {
-                    cur_vec.val = pcur->val;
-                    if(cur_vec.status == SPT_VEC_INVALID)
+                    if(ppre == NULL)
+                        goto get_id_start;
+                    else
                     {
-                        if(ppre == NULL)
+                        cur_vec.val = ppre->val;
+                        if(cur_vec.status != SPT_VEC_VALID)
                             goto get_id_start;
                         else
                         {
-                            cur_vec.val = ppre->val;
-                            if(cur_vec.status == SPT_VEC_INVALID)
-                                goto get_id_start;
-                            else
-                            {
-                                pcur = ppre;
-                                ppre = NULL;
-                                continue;
-                            }
+                            pcur = ppre;
+                            ppre = NULL;
+                            continue;
                         }
                     }
-                    continue;
                 }
+                continue;
             }
             
             //对于一个向量的右结点:
@@ -790,14 +796,14 @@ get_id_start:
                     atomic64_cmpxchg((atomic64_t *)pnext, next_vec.val, tmp_vec.val);
                     //set invalid succ or not, refind from cur
                     cur_vec.val = pcur->val;
-                    if((cur_vec.status == SPT_VEC_INVALID))
+                    if((cur_vec.status != SPT_VEC_VALID))
                     {
                         if(ppre == NULL)
                             goto get_id_start;
                         else
                         {
                             cur_vec.val = ppre->val;
-                            if(cur_vec.status == SPT_VEC_INVALID)
+                            if(cur_vec.status != SPT_VEC_VALID)
                                 goto get_id_start;
                             else
                             {
@@ -2493,6 +2499,7 @@ refind_forward:
                 unmap_st[g_thrd_id].line[unmap_st[g_thrd_id].idx] = __LINE__;
                 unmap_st[g_thrd_id].idx = (unmap_st[g_thrd_id].idx+1)&0xffff;
                 unmap_cnt[g_thrd_id]++;
+                spt_debug("@@@@@@@\r\n");
                 return SPT_DO_AGAIN;
             }
             else
@@ -2510,7 +2517,7 @@ refind_forward:
             unmap_st[g_thrd_id].line[unmap_st[g_thrd_id].idx] = __LINE__;
             unmap_st[g_thrd_id].idx = (unmap_st[g_thrd_id].idx+1)&0xffff;
             unmap_cnt[g_thrd_id]++;
-            
+            spt_debug("@@@@@@@\r\n");
             return SPT_DO_AGAIN;
         }
         else
@@ -2684,10 +2691,14 @@ refind_forward:
                         if(next_vec.down == SPT_NULL)
                         {
                             spt_set_data_flag(tmp_vec);
+                            if(next_vec.rd == SPT_NULL && pcur!=pclst->pstart)
+                                tmp_vec.status = SPT_VEC_INVALID;
                         }
                         else
                         {
                             tmp_vec.rd = next_vec.down;
+                            //简化逻辑，最后再触发重查
+                            #if 0 
                             if(cur_data != SPT_INVALID)
                             {
                                 //之前的比较无效，删除结点后重查
@@ -2701,6 +2712,7 @@ refind_forward:
                                 unmap_st[g_thrd_id].idx = (unmap_st[g_thrd_id].idx+1)&0xffff;
                                 unmap_cnt[g_thrd_id]++;
                             }
+                            #endif
                         }                
                     }
                     else
@@ -2732,13 +2744,15 @@ refind_forward:
                         }
                         ///TODO:取新值后再continue
                     }
+                    #if 0
                     if(cmp_invalid)
                     {
                         cmp_invalid = 0;
                         goto refind_start;
                     }
+                    #endif
                     cur_vec.val = pcur->val;
-                    if(cur_vec.status == SPT_VEC_INVALID)
+                    if(cur_vec.status != SPT_VEC_VALID)
                     {
                         pcur = ppre;
                         goto refind_forward;
@@ -2776,7 +2790,7 @@ refind_forward:
                         atomic64_cmpxchg((atomic64_t *)pnext, next_vec.val, tmp_vec.val);
                         //set invalid succ or not, refind from cur
                         cur_vec.val = pcur->val;
-                        if((cur_vec.status == SPT_VEC_INVALID))
+                        if((cur_vec.status != SPT_VEC_VALID))
                         {
                             pcur = ppre;
                             goto refind_forward;
@@ -3579,6 +3593,8 @@ spt_debug("=====================================================\r\n");
                         else
                         {
                             tmp_vec.down = next_vec.down;
+                            //if(tmp_vec.down == SPT_NULL)
+                                //tmp_vec.status = SPT_VEC_INVALID;
                         }
                         //cur_vec.val = atomic64_cmpxchg((atomic64_t *)pcur, cur_vec.val, tmp_vec.val);
                         if(cur_vec.val == atomic64_cmpxchg((atomic64_t *)pcur, cur_vec.val, tmp_vec.val))//delete succ
@@ -3596,18 +3612,16 @@ spt_debug("=====================================================\r\n");
                                     return ret;
                                 return retb;
                             }
-                            continue;
                         }
-                        else//delete fail
+
+                        cur_vec.val = pcur->val;
+                        if(cur_vec.status != SPT_VEC_VALID)
                         {
-                            cur_vec.val = pcur->val;
-                            if(cur_vec.status == SPT_VEC_INVALID)
-                            {
-                                pcur = ppre;
-                                goto refind_forward;
-                            }
-                            continue;
+                            pcur = ppre;
+                            goto refind_forward;
                         }
+                        continue;
+
                     }
                     //对于一个向量，下结点为尾路标是不合法的。
                     if(next_vec.type == SPT_VEC_SIGNPOST)
@@ -4101,12 +4115,13 @@ spt_debug("=====================================================\r\n");
         //pqinfo->ref_cnt = va_new;
         if(va_old == 1)
         {
+            tmp_vec.val = cur_vec.val;
+            tmp_vec.rd = SPT_NULL;
             if(pcur == (spt_vec *)vec_id_2_ptr(pclst,pclst->vec_head))
             {
-                tmp_vec.val = cur_vec.val;
-                tmp_vec.rd = SPT_NULL;
                 if(cur_vec.val == atomic64_cmpxchg((atomic64_t *)pcur, cur_vec.val, tmp_vec.val))//invalidate succ
                 {
+//                    pdh->cur_id = cur_vecid;
                     spt_set_data_free_flag(pdh, pqinfo->free_flag);
                     db_free_to_buf(pclst,cur_data, g_thrd_id);
                     
@@ -4134,10 +4149,10 @@ spt_debug("=====================================================\r\n");
                     goto refind_start;
                 }
             }
-            tmp_vec.val = cur_vec.val;
             tmp_vec.status = SPT_VEC_INVALID;
             if(cur_vec.val == atomic64_cmpxchg((atomic64_t *)pcur, cur_vec.val, tmp_vec.val))//invalidate succ
             {
+//                pdh->cur_id = cur_vecid;
                 spt_set_data_free_flag(pdh, pqinfo->free_flag);
                 db_free_to_buf(pclst,cur_data, g_thrd_id);
                 if(!pclst->is_bottom)
@@ -4484,7 +4499,7 @@ cluster_head_t *spt_cluster_init(u64 startbit,
     do_insert_data(pclst, (char *)pdh_ext, pclst->get_key_in_tree, pclst->get_key_in_tree_end);
 
 #if 1    
-    for(i=0;i<10;i++)
+    for(i=0;i<3;i++)
     {
         plower_clst = cluster_init(1, startbit, endbit, thread_num, pf, pf2, 
                                     pf_free, pf_con);

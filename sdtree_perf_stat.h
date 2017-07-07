@@ -24,7 +24,7 @@ typedef struct sd_perf_stat_s
     };
 
 #define PERF_STAT_PTR(x) &perf_##x
-
+#ifdef _PERF_STAT_
 #define PERF_STAT_START(x) perf_##x.cur[g_thrd_id] = rdtsc()
 
 #define PERF_STAT_END(x) \
@@ -39,6 +39,11 @@ typedef struct sd_perf_stat_s
             perf_##x.max[g_thrd_id] = total; \
         perf_##x.cnt[g_thrd_id]++; \
     }
+#else
+#define PERF_STAT_START(x) 
+#define PERF_STAT_END(x) 
+
+#endif
 #define PERF_STAT_DEC(x) \
     extern sd_perf_stat perf_##x
 

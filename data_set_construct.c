@@ -437,6 +437,8 @@ void get_data_from_file(struct data_set_file *flist,long long start_off,long lon
 			
 	return ;
 }
+u64 g_insert_ok = 0;
+u64 g_delete_ok = 0;
 extern void* test_insert_data(char *pdata);
 extern int test_delete_data(char *pdata);
 void test_insert_proc(void *args)
@@ -526,7 +528,7 @@ try_again:
                 }
                 else
                 {
-                    printf("DELETE ERROR[%d],%d\t%s\r\n", ret,__LINE__, __FUNCTION__);
+                    printf("INSERT ERROR[%d],%d\t%s\r\n", ret,__LINE__, __FUNCTION__);
                     break;
                 }
 			}
@@ -545,6 +547,7 @@ try_again:
                 pstat[g_thrd_id]->insert.total = 0;
             }
 #endif      
+            atomic64_add(1,(atomic64_t*)&g_insert_ok);
             PERF_STAT_END(whole_insert);
 			if(ret_data != data)
 			{
@@ -558,7 +561,7 @@ try_again:
 #if 1        
 		per_cache_time_end = rdtsc();
 		total_time = per_cache_time_end - per_cache_time_begin;
-		printf("thread id %d ,per cache insert cost: %lld,insert_cnt is %d,merge_cnt is %lld,average cost is %d\r\n",g_thrd_id, total_time,insert_cnt,merge_cnt,total_time/insert_cnt);
+		//printf("thread id %d ,per cache insert cost: %lld,insert_cnt is %d,merge_cnt is %lld,average cost is %d\r\n",g_thrd_id, total_time,insert_cnt,merge_cnt,total_time/insert_cnt);
 #endif
         //show_sd_perf_stat_thread(g_thrd_id);
 
@@ -633,12 +636,14 @@ try_again:
 					}
 				}
             } 
+            else
+                atomic64_add(1,(atomic64_t*)&g_delete_ok);
 		}
 		spt_thread_exit(g_thrd_id);
 		
 		per_cache_time_end = rdtsc();
 		total_time = per_cache_time_end - per_cache_time_begin;
-		printf("thread id %d ,per cache delete cost: %lld,delete_cnt is %d,average cost is %d\r\n",g_thrd_id, total_time,delete_cnt,total_time/delete_cnt);
+		//printf("thread id %d ,per cache delete cost: %lld,delete_cnt is %d,average cost is %d\r\n",g_thrd_id, total_time,delete_cnt,total_time/delete_cnt);
 		if(cur)
 		{
 			free(cur);

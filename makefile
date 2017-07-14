@@ -3,7 +3,7 @@ INC= -I.
 LIB= -lpthread
 
 CC=gcc
-CC_FLAG=-Wall -O2 -g
+CC_FLAG=-Wall -O3 -g
 
 PRG= test_case
 OBJ= $(patsubst %.c,%.o,$(wildcard *.c))

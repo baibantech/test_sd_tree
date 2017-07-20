@@ -2791,8 +2791,6 @@ refind_forward:
                         map_st[g_thrd_id].line[map_st[g_thrd_id].idx] = __LINE__;
                         map_st[g_thrd_id].idx = (map_st[g_thrd_id].idx+1)&0xffff;
                         map_cnt[g_thrd_id]++;
-                        if(map_cnt[g_thrd_id] > map_cnt_max[g_thrd_id])
-                            map_cnt_max[g_thrd_id] = map_cnt[g_thrd_id];                        
                     }
                     else if(cur_data == SPT_DO_AGAIN)
                     {

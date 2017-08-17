@@ -3,6 +3,7 @@
 
 PERF_STAT_DEFINE(random_cmp);
 PERF_STAT_DEFINE(whole_insert);
+PERF_STAT_DEFINE(whole_delete);
 PERF_STAT_DEFINE(get_data_id);
 PERF_STAT_DEFINE(jhash2_random);
 
@@ -11,6 +12,7 @@ sd_perf_stat *sd_perf_stat_array[] =
 {
     PERF_STAT_PTR(random_cmp),
     PERF_STAT_PTR(whole_insert),
+    PERF_STAT_PTR(whole_delete),
     PERF_STAT_PTR(get_data_id),
     PERF_STAT_PTR(jhash2_random)
 };
@@ -36,6 +38,8 @@ void show_sd_perf_stat_all(void)
 
         for(j=0;j < THREAD_NUM; j++)
         {
+            if(ptr->cnt[j] == 0)
+                continue;
             printf("\r\n-----------------%s\t%d----------------------\r\n",ptr->name, j);
             printf("total cycle: %lld\r\n", ptr->total[j]);
             printf("cnt        : %lld\r\n", ptr->cnt[j]);

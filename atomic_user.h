@@ -68,7 +68,7 @@ typedef unsigned long long u64;
 				      : : "memory", "cc");		\
 			break;						\
 		default:						\
-			assert(0);			\
+			spt_assert(0);			\
 		}							\
 		__ret;							\
 	})
@@ -118,7 +118,7 @@ typedef unsigned long long u64;
 		break;							\
 	}								\
 	default:							\
-		assert(0);					\
+		spt_assert(0);					\
 	}								\
 	__ret;								\
 })
@@ -185,7 +185,7 @@ typedef unsigned long long u64;
 				      : "memory", "cc");		\
 			break;						\
 		default:						\
-			assert(0);					\
+			spt_assert(0);					\
 		}							\
 		__ret;							\
 	})

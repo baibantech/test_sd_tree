@@ -28,7 +28,7 @@ unsigned long long spt_merge_num = 0;
 long long  data_set_config_instance_len = DEFAULT_INS_LEN;
 long long  data_set_config_instance_num = DEFAULT_INS_NUM;
 
-long long  data_set_config_random = 1;
+long long  data_set_config_random = 0;
 long long  data_set_config_file_len = DEFAULT_FILE_LEN;
 
 long long  data_set_config_cache_unit_len = 40*1024*1024;
@@ -603,6 +603,7 @@ void test_delete_proc(void *args)
                 spt_thread_start(g_thrd_id);
             }
 try_again:
+            PERF_STAT_START(whole_delete);  
 			if((ret = test_delete_data(data)) < 0)
             {
                 if(-10000 == ret)
@@ -638,6 +639,7 @@ try_again:
             } 
             else
                 atomic64_add(1,(atomic64_t*)&g_delete_ok);
+            PERF_STAT_END(whole_delete);  
 		}
 		spt_thread_exit(g_thrd_id);
 		

@@ -2,7 +2,7 @@
 #define _SDTREE_PERF_STAT_H_
 
 #define THREAD_NUM 8
-
+#define _PERF_STAT_
 typedef struct sd_perf_stat_s
 {
     char *name;
@@ -49,6 +49,7 @@ typedef struct sd_perf_stat_s
 
 PERF_STAT_DEC(random_cmp);
 PERF_STAT_DEC(whole_insert);
+PERF_STAT_DEC(whole_delete);
 PERF_STAT_DEC(get_data_id);
 PERF_STAT_DEC(jhash2_random);
 

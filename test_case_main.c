@@ -17,6 +17,7 @@
 #include "vector.h"
 #include "chunk.h"
 #include "splitter_adp.h"
+#include "spt_dep.h"
 char test_case_name[64] = {'t','e','s','t','_','c','a','s','e'};
 
 typedef void (*test_proc_pfn)(void *args);

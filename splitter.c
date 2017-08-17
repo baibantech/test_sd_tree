@@ -713,7 +713,7 @@ int do_insert_rsignpost_down(cluster_head_t *pclst, insert_info_t *pinsert, char
     if(pvec_a == 0)
     {
         /*yzx释放资源， 申请新块，拆分*/
-        printf("\r\n%d\t%s", __LINE__, __FUNCTION__);
+        spt_print("\r\n%d\t%s", __LINE__, __FUNCTION__);
         atomic64_add(1,(atomic64_t *)&g_dbg_info.oom_no_db);
         spt_set_data_not_free(pdh);
         db_free_to_buf(pclst, dataid, g_thrd_id);
@@ -1712,7 +1712,7 @@ spt_divided_info *spt_divided_info_init(spt_sort_info *psort, int dvd_times,
     {
         n += SPT_DVD_CNT_PER_TIME;
         pNth_data = get_about_Nth_smallest_data(psort, n);
-        psrc = pdclst->get_key(pNth_data);
+        psrc = pdclst->get_key_in_tree(pNth_data);
 
         pdata = puclst->construct_data(psrc);
         if(NULL == pdata)
@@ -1729,6 +1729,7 @@ spt_divided_info *spt_divided_info_init(spt_sort_info *psort, int dvd_times,
             return NULL;
         }
         d_vb_array[loop] = pdata;
+        pdclst->get_key_in_tree_end(psrc);
 
     }
     pdvd_info->pdst_clst = cluster_init(pdvd_info->down_is_bottom, 
@@ -3326,8 +3327,24 @@ spt_debug("=====================================================\r\n");
                         else
                         {
                             tmp_vec.down = next_vec.down;
-                            //if(tmp_vec.down == SPT_NULL)
-                                //tmp_vec.status = SPT_VEC_INVALID;
+                            if(next_vec.type != SPT_VEC_DATA
+                                || (next_vec.type == SPT_VEC_DATA
+                                     && next_vec.rd != SPT_NULL))
+                            {
+                                spt_vec tmp_vec_b;
+                                tmp_vec_b.val = next_vec.val;
+                                tmp_vec_b.status = SPT_VEC_VALID;
+                                atomic64_cmpxchg((atomic64_t *)pnext, next_vec.val, tmp_vec_b.val);
+                                //set invalid succ or not, refind from cur
+                                cur_vec.val = pcur->val;
+                                if((cur_vec.status == SPT_VEC_INVALID))
+                                {
+                                    pcur = ppre;
+                                    goto refind_forward;
+                                }
+                                continue;
+                            }
+                                //BUG();
                         }
                         //cur_vec.val = atomic64_cmpxchg((atomic64_t *)pcur, cur_vec.val, tmp_vec.val);
                         if(cur_vec.val == atomic64_cmpxchg((atomic64_t *)pcur, cur_vec.val, tmp_vec.val))//delete succ
@@ -3896,10 +3913,11 @@ spt_debug("=====================================================\r\n");
                 if(!pclst->is_bottom)
                     refresh_db_hang_vec(pclst, pcur, pdh);
                 op = SPT_OP_FIND;
-                pcur = ppre;
+                //pcur = ppre;
                 cur_data = SPT_INVALID;
                 pqinfo->ref_cnt = 0;
-                goto refind_forward;
+                //goto refind_forward;
+                goto refind_start;
             }
             else
             {
@@ -4217,7 +4235,7 @@ cluster_head_t *spt_cluster_init(u64 startbit,
     cluster_head_t *pclst, *plower_clst;
     spt_dh_ext *pdh_ext;
     int i;
-    pclst = cluster_init(0, startbit, 4096, thread_num, pf, pf2, free_data, 
+    pclst = cluster_init(0, startbit, DATA_BIT_MAX, thread_num, pf, pf2, free_data, 
                             spt_upper_construct_data);
     if(pclst == NULL)
         return NULL;
